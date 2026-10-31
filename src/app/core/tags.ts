@@ -22,7 +22,7 @@ export const TAG_GROUPS: TagGroup[] = [
   },
   {
     name: 'Mehanika',
-    open: false,
+    open: true,
     tags: [
       'Draftovanje',
       'Postavljanje pločica',

@@ -47,3 +47,4 @@ Thumbs.db
 
 # PDF-ovi za ručni upload u Supabase Storage
 /pravila-pdf/
+__pycache__/

@@ -24,7 +24,7 @@ from (values
   ('6857fe44-0ab9-4ece-8940-7b713cc12b7b'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/catan.pdf', 'https://www.youtube.com/watch?v=oGg-6PxCjIk'),  -- Catan
   ('a0f99692-da84-4f33-ad91-2a57f7f904a3'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/catan-vitezovi.pdf', 'https://www.youtube.com/watch?v=LROxwuKDFPE'),  -- Catan vitezovi
   ('1687fbb3-d5c9-4371-8d36-4f26fbdcdb87'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/caverna.pdf', 'https://www.youtube.com/watch?v=n_tZE3-dAYQ'),  -- Caverna
-  ('95730aae-d803-490a-b319-e0fa86e9a98e'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/citadela-citadels.pdf', 'https://www.youtube.com/watch?v=YU7tu2NgAn8'),  -- Citadela (Citadels)
+  ('95730aae-d803-490a-b319-e0fa86e9a98e'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/citadela-citadels.pdf', 'https://www.youtube.com/watch?v=YU7tu2NgAn8'),  -- Citadele
   ('f1119556-6b3f-4290-83a7-58d3cba0f0e7'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/clank-catacombs.pdf', 'https://www.youtube.com/watch?v=lCoV-fFSAvM'),  -- Clank! Catacombs
   ('32cd5f33-84d6-40ce-910e-58fcaa1814ec'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/find-a-clue.pdf', 'https://www.youtube.com/watch?v=WAAUmIIM0p8'),  -- Cluedo
   ('84bf5990-1011-4ce9-9448-6576dfc444a1'::uuid, 'https://lfoijirrquodqmqfhbmw.supabase.co/storage/v1/object/public/rules/codenames.pdf', 'https://www.youtube.com/watch?v=ZHYusbl4U04'),  -- Codenames

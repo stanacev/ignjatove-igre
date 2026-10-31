@@ -31,6 +31,7 @@ RENAMED = {
     "Serif od Notingema 2nd": "Šerif (Sheriff of Nottingham)",
     "Teraformiranje  Mars": "Mars (Terraforming Mars)",
     "Vinhos (Deluxe edition)": "Vinhos",
+    "Citadele": "Citadela (Citadels)",
 }
 # igre koje je Ignjat sam dodao sa svojim PDF-om
 OWN_FILES = {"Azul": "azul.pdf", "Kojot": "kojot.pdf"}

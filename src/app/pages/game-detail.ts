@@ -13,13 +13,14 @@ import { Header } from '../shared/header';
 import { Icon, IconName } from '../shared/icon';
 import { Modal } from '../shared/modal';
 import { WeightBar } from '../shared/weight-bar';
+import { PdfViewer } from '../shared/pdf-viewer';
 import { NotFound } from './not-found';
 
 type Tab = 'opis' | 'video' | 'pravila';
 
 @Component({
   selector: 'app-game-detail',
-  imports: [NgTemplateOutlet, RouterLink, Markdown, Youtube, Cover, Header, Icon, Modal, WeightBar, NotFound],
+  imports: [NgTemplateOutlet, RouterLink, Markdown, Youtube, Cover, Header, Icon, Modal, WeightBar, NotFound, PdfViewer],
   template: `
     @if (game(); as g) {
       @if (vp.desktop()) {
@@ -133,15 +134,16 @@ type Tab = 'opis' | 'video' | 'pravila';
 
         @if (vp.desktop()) {
           @if (hasVideo() || hasRules()) {
-            <div class="flex flex-wrap gap-12 pt-10">
+            <!-- video i pravila jedno ispod drugog, da PDF ima dovoljno širine za čitanje -->
+            <div class="flex flex-col gap-12 pt-10">
               @if (hasVideo()) {
-                <section aria-labelledby="h-video" class="flex flex-[3_1_560px] flex-col gap-4.5">
+                <section aria-labelledby="h-video" class="flex max-w-[760px] flex-col gap-4.5">
                   <h2 id="h-video" class="m-0 font-display text-[22px] font-normal">Kako se igra</h2>
                   <app-youtube [url]="g.youtubeUrl!" [title]="g.name" />
                 </section>
               }
               @if (hasRules()) {
-                <section aria-labelledby="h-rules" class="flex flex-[2_1_380px] flex-col gap-4.5">
+                <section aria-labelledby="h-rules" class="flex max-w-[960px] flex-col gap-4.5">
                   <h2 id="h-rules" class="m-0 font-display text-[22px] font-normal">Pravila</h2>
                   <ng-container *ngTemplateOutlet="rules" />
                 </section>
@@ -185,9 +187,13 @@ type Tab = 'opis' | 'video' | 'pravila';
         <ng-template #rules>
           <div class="flex flex-col gap-3.5">
             @if (g.rulesPdfUrl) {
-              <a [href]="g.rulesPdfUrl" target="_blank" rel="noopener" class="btn btn-s self-start px-3.5 text-sm">
-                <app-icon name="doc" [size]="18" />Pravila (PDF)
-              </a>
+              @if (isPdf(g.rulesPdfUrl)) {
+                <app-pdf-viewer [url]="g.rulesPdfUrl" />
+              } @else {
+                <a [href]="g.rulesPdfUrl" target="_blank" rel="noopener" class="btn btn-s self-start px-3.5 text-sm">
+                  <app-icon name="external" [size]="18" />Pravila (otvara sajt)
+                </a>
+              }
             }
             @if (g.rules) {
               <app-markdown [text]="g.rules" />
@@ -230,6 +236,9 @@ export class GameDetail {
   protected readonly range = range;
   protected readonly decimal = decimal;
   protected readonly weightLabel = weightLabel;
+
+  /** Link vodi na PDF (a ne na web stranicu sa pravilima) */
+  protected isPdf = (url: string) => /\.pdf($|[?#])/i.test(url) || url.startsWith('data:application/pdf');
 
   protected game = computed(() => this.games.byId(this.id()));
   protected hasVideo = computed(() => !!youtubeId(this.game()?.youtubeUrl));

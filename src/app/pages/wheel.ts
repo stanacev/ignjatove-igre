@@ -12,8 +12,6 @@ import { Header } from '../shared/header';
 import { Icon } from '../shared/icon';
 import { EmptyState } from '../shared/status';
 
-/** Više od ovoga ne staje čitljivo na točak; uzima se nasumičan uzorak. */
-const MAX_SEGMENTS = 24;
 const SPIN_MS = 4200;
 const COLORS = ['#22396F', '#0D1C42', '#16295A'];
 
@@ -163,11 +161,15 @@ export class Wheel implements OnDestroy {
   private timer?: ReturnType<typeof setTimeout>;
 
   protected pool = computed(() => this.f.apply(this.games.games()));
-  /** Igre na točku: sve iz filtera, ili nasumičnih MAX_SEGMENTS ako ih ima previše */
+  /** Igre na točku: sve koje prolaze filtere (zamrznuto dok se vrti) */
   protected onWheel = signal<Game[]>([]);
 
   protected countText = computed(() => `${gamesCount(this.onWheel().length)} u točku`);
-  protected fontSize = computed(() => (this.onWheel().length > 16 ? 9.5 : 11.5));
+  /** Slova se smanjuju sa brojem igara, da naziv stane u svoje polje (luk na poluprečniku 140) */
+  protected fontSize = computed(() => {
+    const arc = (2 * Math.PI * 140) / Math.max(1, this.onWheel().length);
+    return Math.round(Math.min(11.5, Math.max(5.5, arc * 0.55)) * 10) / 10;
+  });
 
   protected summary = computed(() => {
     const parts: string[] = [];
@@ -189,7 +191,8 @@ export class Wheel implements OnDestroy {
       +(160 + r * Math.cos(rad(deg))).toFixed(2),
       +(160 + r * Math.sin(rad(deg))).toFixed(2),
     ];
-    const maxChars = n > 16 ? 13 : 15;
+    // od ivice do sredine ima ~105 jedinica; znak je širok ~0.6 veličine slova
+    const maxChars = Math.floor(105 / (0.6 * this.fontSize()));
     return games.map((g, i) => {
       // segment i je centriran na uglu -90 + i*seg (0 = vrh)
       const mid = -90 + i * seg;
@@ -203,7 +206,7 @@ export class Wheel implements OnDestroy {
       return {
         path,
         fill: COLORS[n % 3 === 1 && i === n - 1 ? 1 : i % 3],
-        text: g.name.length > maxChars ? g.name.slice(0, maxChars - 1).trimEnd() + '…' : g.name,
+        text: label(g.name, maxChars),
         tx,
         ty,
         angle: mid,
@@ -217,7 +220,7 @@ export class Wheel implements OnDestroy {
     effect(() => {
       const pool = this.pool();
       if (untracked(this.spinning)) return;
-      this.onWheel.set(pool.length > MAX_SEGMENTS ? shuffle(pool).slice(0, MAX_SEGMENTS) : pool);
+      this.onWheel.set(pool);
       this.result.set(null);
     });
   }
@@ -246,11 +249,8 @@ export class Wheel implements OnDestroy {
   }
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+/** Naziv za točak: bez dela u zagradi ("Šerif (Sheriff of Nottingham)" → "Šerif"), skraćen ako ne staje. */
+function label(name: string, maxChars: number): string {
+  const short = name.replace(/\s*\(.*\)\s*$/, '') || name;
+  return short.length > maxChars ? short.slice(0, maxChars - 1).trimEnd() + '…' : short;
 }

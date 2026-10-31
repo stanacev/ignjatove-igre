@@ -44,3 +44,6 @@ Thumbs.db
 
 # Lokalna podešavanja Claude-a
 /.claude/
+
+# PDF-ovi za ručni upload u Supabase Storage
+/pravila-pdf/

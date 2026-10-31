@@ -256,6 +256,9 @@ function num(s: string): number | null {
                   } @else if (pdfUrl().trim()) {
                     <a [href]="pdfUrl().trim()" target="_blank" rel="noopener" class="text-[13px] font-semibold text-slate-400 no-underline hover:text-cream-50">Otvori link da proveriš ↗</a>
                   }
+                  <span class="field-hint">
+                    Otpremljen fajl se čita direktno na sajtu i radi offline. Link sa drugog sajta se najčešće samo otvara u novom prozoru.
+                  </span>
                 }
                 <input #pdfInput type="file" accept="application/pdf" class="hidden" (change)="onPdf($event)" />
               </div>

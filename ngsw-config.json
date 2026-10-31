@@ -6,7 +6,14 @@
       "name": "app",
       "installMode": "prefetch",
       "resources": {
-        "files": ["/favicon.svg", "/index.html", "/manifest.webmanifest", "/*.css", "/*.js"]
+        "files": [
+          "/favicon.svg",
+          "/index.html",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js",
+          "/pdfjs/pdf.worker.min.mjs"
+        ]
       }
     },
     {
@@ -14,14 +21,31 @@
       "installMode": "prefetch",
       "updateMode": "prefetch",
       "resources": {
-        "files": ["/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"]
+        "files": [
+          "/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)",
+          "/icons/**",
+          "/media/**"
+        ]
+      }
+    },
+    {
+      "name": "pdfjs",
+      "installMode": "lazy",
+      "updateMode": "lazy",
+      "resources": {
+        "files": [
+          "/pdfjs/**"
+        ]
       }
     }
   ],
   "dataGroups": [
     {
       "name": "slike-igara",
-      "urls": ["https://*.supabase.co/storage/v1/object/public/**", "https://i.ytimg.com/**"],
+      "urls": [
+        "https://*.supabase.co/storage/v1/object/public/**",
+        "https://i.ytimg.com/**"
+      ],
       "cacheConfig": {
         "strategy": "performance",
         "maxSize": 500,
@@ -30,7 +54,9 @@
     },
     {
       "name": "podaci-igara",
-      "urls": ["https://*.supabase.co/rest/v1/**"],
+      "urls": [
+        "https://*.supabase.co/rest/v1/**"
+      ],
       "cacheConfig": {
         "strategy": "freshness",
         "timeout": "4s",

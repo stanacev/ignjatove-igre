@@ -5,6 +5,7 @@ import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
 import { Game, GameInput } from '../core/models';
 import { resizeImage, youtubeId } from '../core/media';
+import { TAG_GROUPS, TagGroup } from '../core/tags';
 import { ToastService } from '../core/ui.service';
 import { Youtube } from '../shared/content';
 import { Cover } from '../shared/cover';
@@ -168,6 +169,31 @@ function num(s: string): number | null {
                     }
                   </datalist>
                 </div>
+                <!-- svi postojeći tagovi po grupama: klik dodaje/uklanja -->
+                <div class="mt-1 flex flex-col gap-3 rounded border border-ink-700 bg-ink-900/50 p-3">
+                  @for (g of tagGroups(); track g.name) {
+                    <div class="flex flex-col gap-2" role="group" [attr.aria-label]="g.name">
+                      <span class="label-caps">{{ g.name }}</span>
+                      <div class="flex flex-wrap gap-2">
+                        @for (t of g.tags; track t) {
+                          <button
+                            type="button"
+                            class="tag cursor-pointer transition-colors hover:border-ink-500"
+                            [class]="tags().includes(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
+                            [attr.aria-pressed]="tags().includes(t)"
+                            (click)="toggleTag(t)"
+                          >
+                            @if (tags().includes(t)) {
+                              <app-icon name="check" [size]="14" />
+                            }
+                            {{ t }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                  <span class="field-hint">Klikni tag da ga dodaš ili ukloniš. Novi tag ukucaj u polje iznad.</span>
+                </div>
               </div>
 
               <div class="grid gap-5 sm:grid-cols-3">
@@ -323,6 +349,15 @@ export class GameForm implements OnDestroy {
   protected allTags = computed(() =>
     [...new Set(this.games.games().flatMap((g) => g.tags))].sort((a, b) => a.localeCompare(b, 'sr')),
   );
+  /** Grupe tagova kao u filteru; tagovi van grupa idu u "Ostalo" */
+  protected tagGroups = computed<TagGroup[]>(() => {
+    const all = this.allTags();
+    const known = new Set(TAG_GROUPS.flatMap((g) => g.tags));
+    const groups = TAG_GROUPS.map((g) => ({ ...g, tags: g.tags }));
+    const rest = all.filter((t) => !known.has(t));
+    if (rest.length) groups.push({ name: 'Ostalo', open: true, tags: rest });
+    return groups;
+  });
   protected tagSuggestions = computed(() => this.allTags().filter((t) => !this.tags().includes(t)));
   protected language = signal('');
   protected rating = signal('');
@@ -444,8 +479,12 @@ export class GameForm implements OnDestroy {
     }
   }
 
+  protected toggleTag(t: string) {
+    this.tags.update((tags) => (tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]));
+  }
+
   protected onTagKey(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.keyCode === 13) {
       e.preventDefault();
       this.commitTag();
     } else if (e.key === 'Backspace' && !this.tagDraft() && this.tags().length) {

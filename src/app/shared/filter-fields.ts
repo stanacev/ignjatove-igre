@@ -1,7 +1,9 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { FilterState, PLAYER_OPTIONS, SORT_OPTIONS, Sort, playersLabel, weightRangeLabel } from '../core/filters';
 import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
+import { TAG_GROUPS, TagGroup } from '../core/tags';
 import { Icon } from './icon';
 import { RangeSlider, SliderScale } from './range-slider';
 
@@ -39,7 +41,7 @@ export const TIME_SCALE: SliderScale = {
 /** Polja filtera; katalog i točak ih dele. `row` je horizontalni raspored za desktop. */
 @Component({
   selector: 'app-filter-fields',
-  imports: [Icon, RangeSlider],
+  imports: [NgTemplateOutlet, Icon, RangeSlider],
   template: `
     <!-- U "row" rasporedu svako polje ima red za naziv iste visine, a kontrole su poravnate
          tako da je linija klizača na istoj visini kao sredina inputa (22px). -->
@@ -111,31 +113,57 @@ export const TIME_SCALE: SliderScale = {
             }
           </span>
           <span class="flex items-center gap-1 text-xs font-bold text-slate-400">
-            {{ tagsOpen() ? 'Sakrij' : 'Prikaži sve' }}
+            {{ tagsOpen() ? 'Sakrij' : 'Izaberi' }}
             <app-icon name="chev" [size]="16" [class.rotate-180]="tagsOpen()" />
           </span>
         </button>
-        @if (tagsOpen() || state().filters().tags.length) {
-          <div class="flex flex-wrap gap-2" role="group" aria-label="Tagovi">
-            @for (t of tagsOpen() ? allTags() : state().filters().tags; track t) {
-              <button
-                type="button"
-                class="tag cursor-pointer transition-colors hover:border-ink-500"
-                [class]="isOn(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
-                [attr.aria-pressed]="isOn(t)"
-                (click)="state().toggleTag(t)"
-              >
-                @if (isOn(t)) {
-                  <app-icon name="check" [size]="14" />
+        @if (tagsOpen()) {
+          <!-- tagovi po grupama; "Mehanika" je sklopljena dok se ne otvori -->
+          <div class="flex flex-col gap-3.5" aria-label="Tagovi">
+            @for (g of groups(); track g.name) {
+              <div class="flex flex-col gap-2" role="group" [attr.aria-label]="g.name">
+                @if (g.open) {
+                  <span class="label-caps">{{ g.name }}</span>
+                } @else {
+                  <button type="button" class="label-caps flex items-center gap-1 self-start hover:text-cream-50" [attr.aria-expanded]="isGroupOpen(g.name)" (click)="toggleGroup(g.name)">
+                    {{ g.name }} ({{ g.tags.length }})
+                    <app-icon name="chev" [size]="14" [class.rotate-180]="isGroupOpen(g.name)" />
+                  </button>
                 }
-                {{ t }}
-              </button>
+                @if (g.open || isGroupOpen(g.name) || hasSelected(g.tags)) {
+                  <div class="flex flex-wrap gap-2">
+                    @for (t of g.open || isGroupOpen(g.name) ? g.tags : selectedOf(g.tags); track t) {
+                      <ng-container *ngTemplateOutlet="chip; context: { $implicit: t }" />
+                    }
+                  </div>
+                }
+              </div>
             }
           </div>
-          @if (state().filters().tags.length > 1) {
-            <span class="field-hint">Prikazuju se igre koje imaju sve izabrane tagove.</span>
-          }
+        } @else if (state().filters().tags.length) {
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Izabrani tagovi">
+            @for (t of state().filters().tags; track t) {
+              <ng-container *ngTemplateOutlet="chip; context: { $implicit: t }" />
+            }
+          </div>
         }
+        @if (state().filters().tags.length > 1) {
+          <span class="field-hint">Prikazuju se igre koje imaju sve izabrane tagove.</span>
+        }
+        <ng-template #chip let-t>
+          <button
+            type="button"
+            class="tag cursor-pointer transition-colors hover:border-ink-500"
+            [class]="isOn(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
+            [attr.aria-pressed]="isOn(t)"
+            (click)="state().toggleTag(t)"
+          >
+            @if (isOn(t)) {
+              <app-icon name="check" [size]="14" />
+            }
+            {{ t }}
+          </button>
+        </ng-template>
       </div>
     }
 
@@ -179,6 +207,23 @@ export class FilterFields {
     [...new Set(this.games.games().flatMap((g) => g.tags))].sort((a, b) => a.localeCompare(b, 'sr')),
   );
   protected tagsOpen = signal(false);
+  private openGroups = signal<string[]>([]);
+
+  /** Grupe sa tagovima koji stvarno postoje u katalogu; nepoznati tagovi idu u "Ostalo" */
+  protected groups = computed<TagGroup[]>(() => {
+    const present = new Set(this.allTags());
+    const known = new Set(TAG_GROUPS.flatMap((g) => g.tags));
+    const groups = TAG_GROUPS.map((g) => ({ ...g, tags: g.tags.filter((t) => present.has(t)) }));
+    const rest = this.allTags().filter((t) => !known.has(t));
+    if (rest.length) groups.push({ name: 'Ostalo', open: false, tags: rest });
+    return groups.filter((g) => g.tags.length);
+  });
+  protected isGroupOpen = (name: string) => this.openGroups().includes(name);
+  protected toggleGroup(name: string) {
+    this.openGroups.update((o) => (o.includes(name) ? o.filter((x) => x !== name) : [...o, name]));
+  }
+  protected selectedOf = (tags: string[]) => tags.filter((t) => this.isOn(t));
+  protected hasSelected = (tags: string[]) => tags.some((t) => this.isOn(t));
   protected isOn = (t: string) => this.state().filters().tags.includes(t);
   /** Klase za red sa nazivom polja – iste u svim poljima, da sve kontrole počnu na istoj visini */
   protected headClass = computed(() => (this.row() ? 'flex h-7 items-center justify-between gap-2' : 'flex items-baseline justify-between'));

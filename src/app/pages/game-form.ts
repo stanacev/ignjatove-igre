@@ -11,7 +11,7 @@ import { Cover } from '../shared/cover';
 import { Header } from '../shared/header';
 import { Icon } from '../shared/icon';
 
-type Field = 'image' | 'name' | 'players' | 'time' | 'weight' | 'rating' | 'plays' | 'youtube';
+type Field = 'image' | 'name' | 'players' | 'time' | 'weight' | 'rating' | 'plays' | 'youtube' | 'pdf';
 
 const MAX_IMAGE_MB = 15;
 const MAX_PDF_MB = 20;
@@ -224,17 +224,40 @@ function num(s: string): number | null {
                   <ng-container *ngTemplateOutlet="toolbar; context: { $implicit: rulesEl }" />
                   <textarea #rulesEl id="f-rules" rows="8" class="block w-full resize-y border-0 bg-transparent px-3 py-2.5 text-[15px] leading-relaxed outline-none" [value]="rules()" (input)="rules.set(val($event))"></textarea>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  @if (pdfName()) {
-                    <span class="tag normal-case"><app-icon name="doc" [size]="14" />{{ pdfName() }}
-                      <button type="button" class="ml-0.5 flex" aria-label="Ukloni PDF pravila" (click)="clearPdf()"><app-icon name="x" [size]="14" /></button>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="f-pdf" class="field-label"><span>PDF pravila</span><span class="field-hint">opciono · link ili fajl</span></label>
+                @if (pdf(); as file) {
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="tag h-9 normal-case"><app-icon name="doc" [size]="14" />{{ file.name }}
+                      <button type="button" class="ml-0.5 flex" aria-label="Ukloni izabrani PDF" (click)="pdf.set(null)"><app-icon name="x" [size]="14" /></button>
                     </span>
+                    <span class="field-hint">otpremiće se pri čuvanju</span>
+                  </div>
+                } @else {
+                  <div class="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      id="f-pdf"
+                      class="inp flex-1"
+                      inputmode="url"
+                      placeholder="Nalepi link do PDF-a (https://…)"
+                      [value]="pdfUrl()"
+                      (input)="pdfUrl.set(val($event))"
+                      (blur)="touch('pdf')"
+                      [attr.aria-invalid]="showError('pdf')"
+                    />
+                    <button type="button" class="btn btn-s flex-none px-3 text-sm" (click)="pdfInput.click()">
+                      <app-icon name="upload" [size]="16" />Otpremi fajl
+                    </button>
+                  </div>
+                  @if (showError('pdf')) {
+                    <span class="field-error"><app-icon name="alert" [size]="16" />{{ errors().pdf }}</span>
+                  } @else if (pdfUrl().trim()) {
+                    <a [href]="pdfUrl().trim()" target="_blank" rel="noopener" class="text-[13px] font-semibold text-slate-400 no-underline hover:text-cream-50">Otvori link da proveriš ↗</a>
                   }
-                  <button type="button" class="btn btn-s h-10 px-3 text-sm" (click)="pdfInput.click()">
-                    <app-icon name="upload" [size]="16" />{{ pdfName() ? 'Zameni PDF' : 'Dodaj PDF pravila' }}
-                  </button>
-                  <input #pdfInput type="file" accept="application/pdf" class="hidden" (change)="onPdf($event)" />
-                </div>
+                }
+                <input #pdfInput type="file" accept="application/pdf" class="hidden" (change)="onPdf($event)" />
               </div>
             </fieldset>
 
@@ -306,19 +329,16 @@ export class GameForm implements OnDestroy {
   protected cover = signal<Blob | null>(null);
   protected preview = signal<string | null>(null);
   private objectUrl: string | null = null;
+  /** Novi PDF fajl za upload; ima prednost nad linkom */
   protected pdf = signal<File | null>(null);
-  protected pdfRemoved = signal(false);
+  /** Link do PDF-a (spoljni ili ranije otpremljen fajl) */
+  protected pdfUrl = signal('');
 
   protected dragOver = signal(false);
   protected processing = signal(false);
   protected saving = signal(false);
   protected submitted = signal(false);
   private touched = signal<Set<Field>>(new Set());
-
-  protected pdfName = computed(() => {
-    if (this.pdf()) return this.pdf()!.name;
-    return this.original()?.rulesPdfUrl && !this.pdfRemoved() ? 'Postojeći PDF' : '';
-  });
 
   protected ytValid = computed(() => !!youtubeId(this.youtube()));
 
@@ -354,6 +374,8 @@ export class GameForm implements OnDestroy {
     const p = num(this.plays());
     if (p !== null && (!Number.isInteger(p) || p < 0)) e.plays = 'Unesi ceo broj';
     if (this.youtube().trim() && !this.ytValid()) e.youtube = 'Ovo ne liči na YouTube link';
+    const pdf = this.pdfUrl().trim();
+    if (!this.pdf() && pdf && !/^https?:\/\/\S+$/i.test(pdf)) e.pdf = 'Link mora da počinje sa http:// ili https://';
     return e;
   });
 
@@ -378,6 +400,7 @@ export class GameForm implements OnDestroy {
         this.youtube.set(g.youtubeUrl ?? '');
         this.description.set(g.description ?? '');
         this.rules.set(g.rules ?? '');
+        this.pdfUrl.set(g.rulesPdfUrl ?? '');
         if (!this.cover()) this.preview.set(g.imageUrl);
       });
     });
@@ -483,11 +506,6 @@ export class GameForm implements OnDestroy {
     this.pdf.set(file);
   }
 
-  protected clearPdf() {
-    this.pdf.set(null);
-    this.pdfRemoved.set(true);
-  }
-
   /** Mini Markdown alati za opis i pravila */
   protected format(el: HTMLTextAreaElement, kind: 'heading' | 'bold' | 'list') {
     const { selectionStart: s, selectionEnd: e, value } = el;
@@ -530,7 +548,8 @@ export class GameForm implements OnDestroy {
       description: opt(this.description()),
       youtubeUrl: opt(this.youtube()),
       rules: opt(this.rules()),
-      rulesPdfUrl: orig?.rulesPdfUrl ?? null,
+      // otpremljeni fajl (ako postoji) zameniće ovaj link u GamesService.save
+      rulesPdfUrl: opt(this.pdfUrl()),
       tags: this.tags(),
       language: opt(this.language()),
       rating: num(this.rating()),
@@ -541,7 +560,6 @@ export class GameForm implements OnDestroy {
       const saved = await this.games.save(this.id() ?? null, input, {
         cover: this.cover() ?? undefined,
         rulesPdf: this.pdf() ?? undefined,
-        removeRulesPdf: this.pdfRemoved(),
       });
       this.toast.success(this.id() ? 'Izmene su sačuvane' : 'Igra je sačuvana');
       this.router.navigate(['/igra', saved.id]);

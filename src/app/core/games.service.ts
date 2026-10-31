@@ -8,10 +8,8 @@ const CACHE_KEY = 'ii-games-cache';
 export interface SaveFiles {
   /** Nova (već smanjena) slika kutije */
   cover?: Blob;
-  /** Novi PDF pravila */
+  /** Novi PDF pravila; zamenjuje link iz `rulesPdfUrl` */
   rulesPdf?: File;
-  /** Ukloni postojeći PDF */
-  removeRulesPdf?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -46,7 +44,6 @@ export class GamesService {
     const data = { ...input };
     if (files.cover) data.imageUrl = await this.backend.uploadCover(files.cover);
     if (files.rulesPdf) data.rulesPdfUrl = await this.backend.uploadRulesPdf(files.rulesPdf);
-    else if (files.removeRulesPdf) data.rulesPdfUrl = null;
 
     const saved = await this.backend.save(id, data);
     this.setGames(id ? this.games().map((g) => (g.id === id ? saved : g)) : [...this.games(), saved]);

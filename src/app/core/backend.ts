@@ -5,7 +5,8 @@ import { supabase } from './supabase';
 
 export interface Backend {
   list(): Promise<Game[]>;
-  save(id: string | null, data: GameInput): Promise<Game>;
+  /** Nova igra: sva polja; izmena: samo promenjena polja */
+  save(id: string | null, data: Partial<GameInput>): Promise<Game>;
   remove(game: Game): Promise<void>;
   uploadCover(blob: Blob): Promise<string>;
   uploadRulesPdf(file: File): Promise<string>;
@@ -21,11 +22,13 @@ export class SupabaseBackend implements Backend {
     return (data as GameRow[]).map(fromRow);
   }
 
-  async save(id: string | null, data: GameInput): Promise<Game> {
+  async save(id: string | null, data: Partial<GameInput>): Promise<Game> {
     const row = toRow(data);
-    const query = id
-      ? this.sb.from('games').update(row).eq('id', id)
-      : this.sb.from('games').insert(row);
+    const query = !id
+      ? this.sb.from('games').insert(row)
+      : Object.keys(row).length
+        ? this.sb.from('games').update(row).eq('id', id)
+        : this.sb.from('games').select('*').eq('id', id); // ništa nije promenjeno
     const { data: saved, error } = await query.select().single();
     if (error) throw error;
     return fromRow(saved as GameRow);
@@ -71,12 +74,12 @@ export class DemoBackend implements Backend {
     return this.read();
   }
 
-  async save(id: string | null, data: GameInput): Promise<Game> {
+  async save(id: string | null, data: Partial<GameInput>): Promise<Game> {
     const games = this.read();
     const existing = id ? games.find((g) => g.id === id) : undefined;
     const game: Game = existing
       ? { ...existing, ...data }
-      : { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+      : { ...(data as GameInput), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     this.write(existing ? games.map((g) => (g.id === id ? game : g)) : [...games, game]);
     return game;
   }

@@ -67,22 +67,29 @@ export function fromRow(r: GameRow): Game {
   };
 }
 
-export function toRow(g: GameInput): Omit<GameRow, 'id' | 'created_at'> {
-  return {
-    name: g.name,
-    image_url: g.imageUrl,
-    players_min: g.playersMin,
-    players_max: g.playersMax,
-    time_min: g.timeMin,
-    time_max: g.timeMax,
-    weight: g.weight,
-    description: g.description,
-    youtube_url: g.youtubeUrl,
-    rules: g.rules,
-    rules_pdf_url: g.rulesPdfUrl,
-    tags: g.tags,
-    language: g.language,
-    rating: g.rating,
-    plays: g.plays,
-  };
+const COLUMNS: Record<keyof GameInput, keyof GameRow> = {
+  name: 'name',
+  imageUrl: 'image_url',
+  playersMin: 'players_min',
+  playersMax: 'players_max',
+  timeMin: 'time_min',
+  timeMax: 'time_max',
+  weight: 'weight',
+  description: 'description',
+  youtubeUrl: 'youtube_url',
+  rules: 'rules',
+  rulesPdfUrl: 'rules_pdf_url',
+  tags: 'tags',
+  language: 'language',
+  rating: 'rating',
+  plays: 'plays',
+};
+
+/** Samo prosleđena polja → kolone (za izmenu šaljemo samo ono što se promenilo). */
+export function toRow(g: Partial<GameInput>): Partial<GameRow> {
+  const row: Record<string, unknown> = {};
+  for (const [key, col] of Object.entries(COLUMNS)) {
+    if (key in g) row[col] = g[key as keyof GameInput];
+  }
+  return row as Partial<GameRow>;
 }

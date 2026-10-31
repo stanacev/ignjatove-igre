@@ -12,7 +12,9 @@
           "/manifest.webmanifest",
           "/*.css",
           "/*.js",
-          "/pdfjs/pdf.worker.min.mjs"
+          "/pdfjs/pdf.worker.min.mjs",
+          "/pdfjs/worker.mjs",
+          "/pdfjs/polyfills.mjs"
         ]
       }
     },

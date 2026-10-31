@@ -39,13 +39,18 @@ export class GamesService {
     return this.games().find((g) => g.id === id);
   }
 
-  async save(id: string | null, input: GameInput, files: SaveFiles = {}): Promise<Game> {
-    const previous = id ? this.byId(id) : undefined;
+  /**
+   * @param base verzija igre iz koje je forma popunjena. Kod izmene se šalju samo
+   *   polja koja se razlikuju od nje, pa forma otvorena sa starim podacima ne može
+   *   da pregazi ono što je u međuvremenu promenjeno u bazi (npr. link za pravila).
+   */
+  async save(id: string | null, input: GameInput, files: SaveFiles = {}, base?: Game): Promise<Game> {
+    const previous = id ? (base ?? this.byId(id)) : undefined;
     const data = { ...input };
     if (files.cover) data.imageUrl = await this.backend.uploadCover(files.cover);
     if (files.rulesPdf) data.rulesPdfUrl = await this.backend.uploadRulesPdf(files.rulesPdf);
 
-    const saved = await this.backend.save(id, data);
+    const saved = await this.backend.save(id, previous ? changedFields(data, previous) : data);
     this.setGames(id ? this.games().map((g) => (g.id === id ? saved : g)) : [...this.games(), saved]);
 
     // stare fajlove brišemo tek kad je red uspešno sačuvan
@@ -83,6 +88,16 @@ export class GamesService {
       localStorage.setItem(CACHE_KEY, JSON.stringify(games));
     } catch {}
   }
+}
+
+function changedFields(data: GameInput, previous: Game): Partial<GameInput> {
+  const changed: Partial<GameInput> = {};
+  for (const key of Object.keys(data) as (keyof GameInput)[]) {
+    if (JSON.stringify(data[key]) !== JSON.stringify(previous[key])) {
+      (changed as Record<string, unknown>)[key] = data[key];
+    }
+  }
+  return changed;
 }
 
 function readCache(): Game[] | null {

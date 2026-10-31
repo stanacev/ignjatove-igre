@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   OnDestroy,
+  afterRenderEffect,
   effect,
   input,
   signal,
@@ -11,12 +12,34 @@ import {
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 import { Icon } from './icon';
 
-/** pdf.js se učitava tek kad je čitač potreban (~1 MB), da katalog ostane brz. */
-const pdfjs = () =>
-  import('pdfjs-dist').then((m) => {
-    m.GlobalWorkerOptions.workerSrc = asset('pdf.worker.min.mjs');
+/**
+ * pdf.js se učitava tek kad je čitač potreban (~1 MB), da katalog ostane brz.
+ * "legacy" build jer obična verzija traži najnovije browsere (npr. Map.getOrInsertComputed)
+ * i na starijim telefonima/browserima samo pukne.
+ */
+const pdfjs = () => {
+  polyfill();
+  return import('pdfjs-dist/legacy/build/pdf.mjs').then((m) => {
+    // worker.mjs = iste dopune za starije browsere + pdf.worker.min.mjs
+    m.GlobalWorkerOptions.workerSrc = asset('worker.mjs');
     return m;
   });
+};
+
+/** Promise.withResolvers fali u iOS < 17.4 i Chrome < 119, a legacy build ga ne dodaje sam. */
+function polyfill() {
+  const P = Promise as unknown as { withResolvers?: unknown };
+  if (typeof P.withResolvers === 'function') return;
+  P.withResolvers = function <T>() {
+    let resolve!: (v: T) => void;
+    let reject!: (e: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+}
 
 function asset(path: string): string {
   return new URL(`pdfjs/${path}`, document.baseURI).href;
@@ -124,12 +147,13 @@ export class PdfViewer implements OnDestroy {
       untracked(() => this.open(url));
     });
 
-    // kad se strane pojave u DOM-u, prati koje su blizu ekrana
-    effect(() => {
+    // posle prikaza (kad su strane stvarno u DOM-u) prati koje su blizu ekrana
+    afterRenderEffect(() => {
+      const pages = this.pages();
       const el = this.pagesEl()?.nativeElement;
       const root = this.scroller()?.nativeElement;
-      if (!el || !root) return;
-      this.watch(el, root);
+      if (!el || !root || !pages.length) return;
+      untracked(() => this.watch(el, root));
     });
   }
 
@@ -174,9 +198,11 @@ export class PdfViewer implements OnDestroy {
       console.error(e);
       this.status.set('error');
       this.error.set(
-        navigator.onLine
-          ? 'Ova pravila ne mogu da se prikažu ovde (sajt sa kog su ne dozvoljava prikaz). Otvori ih u novom prozoru.'
-          : 'Nema interneta, a ova pravila još nisu sačuvana na uređaju.',
+        !navigator.onLine
+          ? 'Nema interneta, a ova pravila još nisu sačuvana na uređaju.'
+          : url.includes('/storage/v1/object/public/')
+            ? 'Pravila trenutno ne mogu da se učitaju. Pokušaj ponovo ili ih otvori u novom prozoru.'
+            : 'Ova pravila su na drugom sajtu koji ne dozvoljava prikaz ovde. Otvori ih u novom prozoru.',
       );
     }
   }
@@ -191,13 +217,22 @@ export class PdfViewer implements OnDestroy {
       },
       { root, rootMargin: '800px 0px' },
     );
-    container.querySelectorAll<HTMLElement>('[data-page]').forEach((el) => this.observer!.observe(el));
+    const slots = [...container.querySelectorAll<HTMLElement>('[data-page]')];
+    slots.forEach((el) => this.observer!.observe(el));
+    // prve strane crtaj odmah, ne čekaj da browser javi da su vidljive
+    slots.slice(0, 2).forEach((el) => this.render(el));
 
     // promena širine (npr. ceo ekran, okretanje telefona) → ponovo nacrtaj vidljive strane
     this.resize?.disconnect();
     this.resize = new ResizeObserver(() => {
       const w = container.clientWidth;
-      if (Math.abs(w - this.lastWidth) < 2) return;
+      if (!w) return;
+      // prvo merenje, ili mala promena (npr. pojavila se traka za skrolovanje):
+      // ne prekidaj crtanje – canvas se ionako skalira na širinu strane
+      if (!this.lastWidth || Math.abs(w - this.lastWidth) / this.lastWidth < 0.15) {
+        this.lastWidth ||= w;
+        return;
+      }
       this.lastWidth = w;
       this.rendered.forEach((r) => r.task?.cancel());
       this.rendered.clear();
@@ -212,7 +247,7 @@ export class PdfViewer implements OnDestroy {
   private async render(slot: HTMLElement) {
     const n = Number(slot.dataset['page']);
     const width = slot.clientWidth;
-    if (!this.doc || !width || this.rendered.get(n)?.width === width) return;
+    if (!this.doc || !width || this.rendered.has(n)) return;
     const entry: { width: number; task?: RenderTask } = { width };
     this.rendered.set(n, entry);
 
@@ -220,7 +255,8 @@ export class PdfViewer implements OnDestroy {
       const page = await this.doc.getPage(n);
       const base = page.getViewport({ scale: 1 });
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+      // najviše 1600px širine canvasa – oštro i na telefonu, a ne crta se predugo
+      const viewport = page.getViewport({ scale: Math.min(width * dpr, 1600) / base.width });
 
       const canvas = document.createElement('canvas');
       canvas.width = Math.floor(viewport.width);

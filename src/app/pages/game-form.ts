@@ -3,7 +3,7 @@ import { Component, OnDestroy, computed, effect, inject, input, signal, untracke
 import { Router, RouterLink } from '@angular/router';
 import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
-import { GameInput } from '../core/models';
+import { Game, GameInput } from '../core/models';
 import { resizeImage, youtubeId } from '../core/media';
 import { ToastService } from '../core/ui.service';
 import { Youtube } from '../shared/content';
@@ -307,6 +307,8 @@ export class GameForm implements OnDestroy {
   private router = inject(Router);
   private toast = inject(ToastService);
 
+  /** Igra kakva je bila kad je forma popunjena – čuvaju se samo razlike u odnosu na nju */
+  private base?: Game;
   protected original = computed(() => (this.id() ? this.games.byId(this.id()!) : undefined));
 
   protected name = signal('');
@@ -385,10 +387,11 @@ export class GameForm implements OnDestroy {
   protected errorCount = computed(() => Object.keys(this.errors()).length);
 
   constructor() {
-    // popuni formu kad su podaci igre dostupni
+    // popuni formu jednom, kad su podaci igre dostupni; ta verzija je "base" za čuvanje
     effect(() => {
       const g = this.original();
-      if (!g) return;
+      if (!g || this.base) return;
+      this.base = g;
       untracked(() => {
         this.name.set(g.name);
         this.playersMin.set(String(g.playersMin));
@@ -560,10 +563,12 @@ export class GameForm implements OnDestroy {
     };
     this.saving.set(true);
     try {
-      const saved = await this.games.save(this.id() ?? null, input, {
-        cover: this.cover() ?? undefined,
-        rulesPdf: this.pdf() ?? undefined,
-      });
+      const saved = await this.games.save(
+        this.id() ?? null,
+        input,
+        { cover: this.cover() ?? undefined, rulesPdf: this.pdf() ?? undefined },
+        this.base,
+      );
       this.toast.success(this.id() ? 'Izmene su sačuvane' : 'Igra je sačuvana');
       this.router.navigate(['/igra', saved.id]);
     } catch (err) {

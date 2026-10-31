@@ -1,0 +1,188 @@
+@import '@fontsource/anta/latin.css';
+@import '@fontsource/anta/latin-ext.css';
+@import '@fontsource-variable/saira/wght.css';
+@import 'tailwindcss';
+
+/* Tokeni iz dizajn sistema (Claude Design) */
+@theme {
+  --color-ink-950: #010736;
+  --color-ink-900: #0d1c42;
+  --color-ink-800: #16295a;
+  --color-ink-700: #22396f;
+  --color-ink-500: #3e5a9c;
+  --color-cream-50: #fcf1d0;
+  --color-cream-300: #cfc6ab;
+  --color-cream-press: #e6d9b2;
+  --color-slate-400: #8e95b5;
+  --color-danger-600: #b83a2e;
+  --color-danger-500: #cc4a3d;
+  --color-danger-300: #ff9a8b;
+  --color-success-300: #8fddb0;
+
+  --font-display: 'Anta', sans-serif;
+  --font-sans: 'Saira Variable', system-ui, sans-serif;
+
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-card: 0 14px 30px -10px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 12px 32px -6px rgba(0, 0, 0, 0.6);
+  --shadow-sheet: 0 -20px 50px rgba(0, 0, 0, 0.55);
+}
+
+@layer base {
+  html {
+    background: var(--color-ink-950);
+    color: var(--color-cream-50);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-slate-400);
+    opacity: 1;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cream-50);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Mreža tačkica kao tabla za igru */
+  .pips {
+    background-image: radial-gradient(rgba(252, 241, 208, 0.075) 1.3px, transparent 1.8px);
+    background-size: 18px 18px;
+  }
+
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded border px-4 text-[15px] font-bold whitespace-nowrap no-underline transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .btn-p {
+    @apply border-cream-50 bg-cream-50 text-ink-950 hover:bg-white active:bg-cream-press;
+  }
+  .btn-s {
+    @apply border-ink-700 bg-ink-900 text-cream-50 hover:border-ink-500 hover:bg-ink-700 active:bg-ink-800;
+  }
+  .btn-g {
+    @apply border-transparent bg-transparent text-cream-300 hover:bg-cream-50/8 hover:text-cream-50;
+  }
+  .btn-d {
+    @apply border-danger-600 bg-danger-600 text-white hover:bg-danger-500;
+  }
+  .btn-icon {
+    @apply inline-flex size-11 items-center justify-center rounded border border-ink-700 bg-ink-950/75 text-cream-50 transition-colors hover:bg-ink-700;
+  }
+
+  .inp {
+    @apply h-11 w-full rounded border border-ink-700 bg-ink-900 px-3 text-[15px] font-semibold text-cream-50 transition-colors hover:border-ink-500 focus:border-cream-50 focus:outline-none;
+  }
+  .inp[aria-invalid='true'] {
+    @apply border-danger-300;
+  }
+  select.inp {
+    @apply appearance-none pr-10 font-bold;
+  }
+
+  .field-label {
+    @apply flex items-baseline justify-between gap-2 text-[13px] font-bold tracking-[0.02em] text-cream-300;
+  }
+  .field-hint {
+    @apply text-xs font-semibold text-slate-400;
+  }
+  .field-error {
+    @apply flex items-center gap-1.5 text-[13px] font-bold text-danger-300;
+  }
+
+  .label-caps {
+    @apply text-[11px] font-extrabold tracking-[0.08em] text-slate-400 uppercase;
+  }
+
+  .tag {
+    @apply inline-flex h-7 items-center gap-1 rounded-sm border border-ink-700 px-2.5 text-xs font-bold tracking-[0.04em] whitespace-nowrap text-cream-300 uppercase;
+  }
+
+  .panel {
+    @apply rounded-md border border-ink-700 bg-ink-900;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #0d1c42 0, #16295a 50%, #0d1c42 100%);
+    background-size: 600px 100%;
+    animation: sk 1.4s linear infinite;
+  }
+
+  .clamp2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Markdown sadržaj (opis i pravila) */
+  .prose-igre {
+    @apply flex flex-col gap-3.5 text-base leading-relaxed text-cream-300;
+  }
+  .prose-igre :where(h1, h2, h3, h4) {
+    @apply mt-2 font-display text-lg font-normal text-cream-50;
+  }
+  .prose-igre :where(ul) {
+    @apply flex list-disc flex-col gap-1 pl-5;
+  }
+  .prose-igre :where(ol) {
+    @apply flex list-decimal flex-col gap-1 pl-5;
+  }
+  .prose-igre :where(strong) {
+    @apply font-bold text-cream-50;
+  }
+  .prose-igre :where(a) {
+    @apply text-cream-50 underline;
+  }
+  .prose-igre :where(p) {
+    @apply m-0;
+  }
+}
+
+@keyframes sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes toast {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes sk {
+  0% {
+    background-position: -300px 0;
+  }
+  100% {
+    background-position: 300px 0;
+  }
+}

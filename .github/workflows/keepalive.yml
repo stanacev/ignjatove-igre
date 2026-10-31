@@ -1,0 +1,23 @@
+# Besplatan Supabase projekat se pauzira posle 7 dana bez aktivnosti.
+# Ovo ga dva puta nedeljno "pingne" jednim čitanjem iz baze (izvršava se na GitHub serverima).
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: '0 8 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping Supabase
+        run: |
+          URL=$(grep -oP "SUPABASE_URL = '\K[^']+" src/app/core/config.ts || true)
+          KEY=$(grep -oP "SUPABASE_ANON_KEY = '\K[^']+" src/app/core/config.ts || true)
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then echo "Supabase još nije podešen"; exit 0; fi
+          curl -sf "$URL/rest/v1/games?select=id&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY"

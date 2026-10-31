@@ -20,7 +20,6 @@ export const routes: Routes = [
   },
   {
     path: 'tocak',
-    canActivate: [adminGuard],
     loadComponent: () => import('./pages/wheel').then((m) => m.Wheel),
     title: 'Točak sreće · Ignjatove igre',
   },

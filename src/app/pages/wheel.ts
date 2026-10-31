@@ -179,6 +179,7 @@ export class Wheel implements OnDestroy {
     }
     if (fl.players !== null) parts.push(playersLabel(fl.players));
     if (fl.timeMax !== null) parts.push(`do ${fl.timeMax} min`);
+    if (fl.tags.length) parts.push(fl.tags.join(', '));
     return parts.join(' · ') || 'Sve igre';
   });
 

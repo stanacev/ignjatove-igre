@@ -1,6 +1,7 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { FilterState, PLAYER_OPTIONS, SORT_OPTIONS, Sort, playersLabel, weightRangeLabel } from '../core/filters';
 import { decimal, weightLabel } from '../core/format';
+import { GamesService } from '../core/games.service';
 import { Icon } from './icon';
 import { RangeSlider, SliderScale } from './range-slider';
 
@@ -94,6 +95,50 @@ export const TIME_SCALE: SliderScale = {
       />
     </div>
 
+    @if (allTags().length) {
+      <!-- u "row" rasporedu tagovi idu u poseban red ispod (order-last, iza dugmeta Resetuj) -->
+      <div class="flex flex-col gap-2.5" [class.basis-full]="row()" [class.order-last]="row()">
+        <button
+          type="button"
+          class="flex items-center justify-between gap-2 text-left"
+          [attr.aria-expanded]="tagsOpen()"
+          (click)="tagsOpen.set(!tagsOpen())"
+        >
+          <span [class]="labelClass()">
+            Tagovi
+            @if (state().filters().tags.length) {
+              <span class="ml-1 font-display text-cream-50">({{ state().filters().tags.length }})</span>
+            }
+          </span>
+          <span class="flex items-center gap-1 text-xs font-bold text-slate-400">
+            {{ tagsOpen() ? 'Sakrij' : 'Prikaži sve' }}
+            <app-icon name="chev" [size]="16" [class.rotate-180]="tagsOpen()" />
+          </span>
+        </button>
+        @if (tagsOpen() || state().filters().tags.length) {
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Tagovi">
+            @for (t of tagsOpen() ? allTags() : state().filters().tags; track t) {
+              <button
+                type="button"
+                class="tag cursor-pointer transition-colors hover:border-ink-500"
+                [class]="isOn(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
+                [attr.aria-pressed]="isOn(t)"
+                (click)="state().toggleTag(t)"
+              >
+                @if (isOn(t)) {
+                  <app-icon name="check" [size]="14" />
+                }
+                {{ t }}
+              </button>
+            }
+          </div>
+          @if (state().filters().tags.length > 1) {
+            <span class="field-hint">Prikazuju se igre koje imaju sve izabrane tagove.</span>
+          }
+        }
+      </div>
+    }
+
     @if (showSort()) {
       <div class="flex flex-col gap-2.5">
         <label [for]="id + '-sort'" class="field-label">Sortiranje</label>
@@ -127,6 +172,14 @@ export class FilterFields {
   protected readonly playersLabel = playersLabel;
 
   protected row = computed(() => this.layout() === 'row');
+
+  private games = inject(GamesService);
+  /** Svi tagovi koji postoje u katalogu */
+  protected allTags = computed(() =>
+    [...new Set(this.games.games().flatMap((g) => g.tags))].sort((a, b) => a.localeCompare(b, 'sr')),
+  );
+  protected tagsOpen = signal(false);
+  protected isOn = (t: string) => this.state().filters().tags.includes(t);
   /** Klase za red sa nazivom polja – iste u svim poljima, da sve kontrole počnu na istoj visini */
   protected headClass = computed(() => (this.row() ? 'flex h-7 items-center justify-between gap-2' : 'flex items-baseline justify-between'));
   protected labelClass = computed(() => (this.row() ? 'field-label text-[15px]' : 'field-label'));

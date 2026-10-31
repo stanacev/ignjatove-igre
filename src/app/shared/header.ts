@@ -41,9 +41,26 @@ import { Logo } from './logo';
             </button>
           </nav>
         } @else {
-          <a routerLink="/prijava" class="btn btn-g -mr-2.5 size-11 !px-0 text-slate-400" aria-label="Prijava (admin)">
-            <app-icon name="key" />
-          </a>
+          <nav class="flex items-center gap-1 lg:gap-2" aria-label="Glavna">
+            <a
+              routerLink="/"
+              [routerLinkActiveOptions]="{ exact: true }"
+              routerLinkActive="!border-cream-50 !text-cream-50"
+              class="hidden h-11 items-center border-b-2 border-transparent px-3 text-[15px] font-bold text-cream-300 no-underline hover:text-cream-50 lg:flex"
+              >Katalog</a
+            >
+            <a
+              routerLink="/tocak"
+              routerLinkActive="!border-cream-50 !text-cream-50"
+              class="flex h-11 items-center gap-2 border-b-2 border-transparent px-2 text-[15px] font-bold text-cream-300 no-underline hover:text-cream-50 lg:px-3"
+              aria-label="Točak sreće"
+            >
+              <app-icon name="wheel" [size]="22" class="lg:hidden" /><span class="hidden lg:inline">Točak sreće</span>
+            </a>
+            <a routerLink="/prijava" class="btn btn-g -mr-2.5 size-11 !px-0 text-slate-400" aria-label="Prijava (admin)">
+              <app-icon name="key" />
+            </a>
+          </nav>
         }
       </div>
     </header>

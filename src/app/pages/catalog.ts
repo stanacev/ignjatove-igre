@@ -118,10 +118,10 @@ import { EmptyState } from '../shared/status';
       }
 
       <ng-template #chips>
-        @for (c of f.chips(); track c.key) {
+        @for (c of f.chips(); track c.key + c.label) {
           <span class="tag">
             {{ c.label }}
-            <button type="button" class="ml-0.5 flex" [attr.aria-label]="'Ukloni ' + c.label" (click)="f.clear(c.key)">
+            <button type="button" class="ml-0.5 flex" [attr.aria-label]="'Ukloni ' + c.label" (click)="f.clear(c.key, c.tag)">
               <app-icon name="x" [size]="14" />
             </button>
           </span>

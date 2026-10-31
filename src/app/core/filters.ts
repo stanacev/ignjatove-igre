@@ -11,18 +11,21 @@ export interface Filters {
   players: number | null;
   /** null = bilo koje trajanje */
   timeMax: number | null;
+  /** Igra mora imati sve izabrane tagove */
+  tags: string[];
 }
 
-export type Sort = 'name' | 'newest' | 'weight-asc' | 'weight-desc';
+export type Sort = 'name' | 'weight-asc' | 'weight-desc' | 'time-asc' | 'time-desc';
 
 export const SORT_OPTIONS: { value: Sort; label: string; short: string }[] = [
   { value: 'name', label: 'Abecedno (A–Z)', short: 'A–Z' },
-  { value: 'newest', label: 'Najnovije dodate', short: 'Najnovije' },
   { value: 'weight-asc', label: 'Težina: lakše → teže', short: 'Lakše' },
   { value: 'weight-desc', label: 'Težina: teže → lakše', short: 'Teže' },
+  { value: 'time-asc', label: 'Trajanje: kraće → duže', short: 'Kraće' },
+  { value: 'time-desc', label: 'Trajanje: duže → kraće', short: 'Duže' },
 ];
 
-export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null };
+export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null, tags: [] };
 
 export function playersLabel(n: number): string {
   if (n === PLAYERS_10_PLUS) return '10+ igrača';
@@ -44,6 +47,10 @@ export function matchesFilters(g: Game, f: Filters): boolean {
     }
   }
   if (f.timeMax !== null && (g.timeMax ?? g.timeMin) > f.timeMax) return false;
+  if (f.tags.length) {
+    const own = g.tags.map((t) => t.toLowerCase());
+    if (!f.tags.every((t) => own.includes(t.toLowerCase()))) return false;
+  }
   return true;
 }
 
@@ -55,13 +62,20 @@ export function sortGames(games: Game[], sort: Sort): Game[] {
   switch (sort) {
     case 'name':
       return sorted.sort(byName);
-    case 'newest':
-      return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || byName(a, b));
     case 'weight-asc':
       return sorted.sort((a, b) => a.weight - b.weight || byName(a, b));
     case 'weight-desc':
       return sorted.sort((a, b) => b.weight - a.weight || byName(a, b));
+    case 'time-asc':
+      return sorted.sort((a, b) => a.timeMin - b.timeMin || duration(a) - duration(b) || byName(a, b));
+    case 'time-desc':
+      return sorted.sort((a, b) => duration(b) - duration(a) || b.timeMin - a.timeMin || byName(a, b));
   }
+}
+
+/** Najduže trajanje igre (gornja granica, ili jedina vrednost) */
+function duration(g: Game): number {
+  return g.timeMax ?? g.timeMin;
 }
 
 /** Pretraga bez obzira na velika slova i dijakritike (č, ć, š…) */
@@ -76,6 +90,8 @@ export function normalize(s: string): string {
 export interface ActiveChip {
   key: keyof Filters;
   label: string;
+  /** za tagove: koji tag uklanja ovaj čip */
+  tag?: string;
 }
 
 /** Stanje filtera; katalog i točak imaju svako svoje. */
@@ -92,6 +108,7 @@ export class FilterState {
     }
     if (f.players !== null) chips.push({ key: 'players', label: playersLabel(f.players) });
     if (f.timeMax !== null) chips.push({ key: 'timeMax', label: `do ${f.timeMax} min` });
+    for (const tag of f.tags) chips.push({ key: 'tags', label: tag, tag });
     return chips;
   });
 
@@ -101,8 +118,14 @@ export class FilterState {
     this.filters.update((f) => ({ ...f, ...p }));
   }
 
-  clear(key: keyof Filters) {
-    this.patch({ [key]: DEFAULT_FILTERS[key] });
+  clear(key: keyof Filters, tag?: string) {
+    if (key === 'tags' && tag) this.toggleTag(tag);
+    else this.patch({ [key]: DEFAULT_FILTERS[key] });
+  }
+
+  toggleTag(tag: string) {
+    const tags = this.filters().tags;
+    this.patch({ tags: tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag] });
   }
 
   reset() {

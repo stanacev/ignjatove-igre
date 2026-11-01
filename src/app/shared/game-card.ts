@@ -31,12 +31,12 @@ import { WeightBar } from './weight-bar';
           <!-- Ignjat: brzo +1 partija iz kataloga (ne otvara igru) -->
           <button
             type="button"
-            class="absolute bottom-2 left-2 flex size-8 items-center justify-center rounded-sm bg-cream-50 text-ink-950 shadow-pop transition-colors hover:bg-white disabled:opacity-60"
+            class="absolute bottom-2 left-2 flex h-[22px] items-center gap-1 rounded-sm border border-transparent bg-ink-950/85 px-1.5 font-display text-[13px] text-cream-50 shadow-pop transition-colors hover:border-cream-50/60 hover:bg-ink-800 disabled:opacity-60"
             [attr.aria-label]="'Dodaj odigranu partiju: ' + game().name"
             [disabled]="saving()"
             (click)="addPlay($event)"
           >
-            <app-icon name="plus" [size]="18" [stroke]="2.6" />
+            <app-icon name="plus" [size]="13" [stroke]="2.4" /><app-icon name="pawn" [size]="14" />
           </button>
         }
         @if (game().plays) {

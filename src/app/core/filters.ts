@@ -13,8 +13,8 @@ export interface Filters {
   timeMax: number | null;
   /** Igra mora imati bar jedan od izabranih tagova */
   tags: string[];
-  /** Jezik malim slovima (npr. "srpski"); null = svi */
-  language: string | null;
+  /** Jezici malim slovima (npr. "srpski"); igra mora biti na jednom od njih, prazno = svi */
+  languages: string[];
 }
 
 export type Sort = 'name' | 'rating-desc' | 'rating-asc' | 'weight-asc' | 'weight-desc' | 'time-asc' | 'time-desc';
@@ -29,7 +29,7 @@ export const SORT_OPTIONS: { value: Sort; label: string; short: string }[] = [
   { value: 'time-desc', label: 'Trajanje: duže → kraće', short: 'Duže' },
 ];
 
-export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null, tags: [], language: null };
+export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null, tags: [], languages: [] };
 
 export function playersLabel(n: number): string {
   if (n === PLAYERS_10_PLUS) return '10+ igrača';
@@ -56,7 +56,8 @@ export function matchesFilters(g: Game, f: Filters): boolean {
     // unija: dovoljno je da igra ima bar jedan od izabranih tagova
     if (!f.tags.some((t) => own.includes(t.toLowerCase()))) return false;
   }
-  if (f.language !== null && languageKey(g.language) !== f.language) return false;
+  // unija, kao kod tagova: dovoljno je da je igra na jednom od izabranih jezika
+  if (f.languages.length && !f.languages.includes(languageKey(g.language) ?? '')) return false;
   return true;
 }
 
@@ -124,8 +125,8 @@ export function normalize(s: string): string {
 export interface ActiveChip {
   key: keyof Filters;
   label: string;
-  /** za tagove: koji tag uklanja ovaj čip */
-  tag?: string;
+  /** za tagove i jezike: koju vrednost uklanja ovaj čip */
+  value?: string;
 }
 
 /** Stanje filtera; katalog i točak imaju svako svoje. */
@@ -142,8 +143,8 @@ export class FilterState {
     }
     if (f.players !== null) chips.push({ key: 'players', label: playersLabel(f.players) });
     if (f.timeMax !== null) chips.push({ key: 'timeMax', label: `do ${f.timeMax} min` });
-    if (f.language !== null) chips.push({ key: 'language', label: `Jezik: ${f.language[0].toUpperCase()}${f.language.slice(1)}` });
-    for (const tag of f.tags) chips.push({ key: 'tags', label: tag, tag });
+    for (const l of f.languages) chips.push({ key: 'languages', label: `Jezik: ${capitalize(l)}`, value: l });
+    for (const tag of f.tags) chips.push({ key: 'tags', label: tag, value: tag });
     return chips;
   });
 
@@ -153,14 +154,18 @@ export class FilterState {
     this.filters.update((f) => ({ ...f, ...p }));
   }
 
-  clear(key: keyof Filters, tag?: string) {
-    if (key === 'tags' && tag) this.toggleTag(tag);
+  clear(key: keyof Filters, value?: string) {
+    if (key === 'tags' && value) this.toggleTag(value);
+    else if (key === 'languages' && value) this.toggleLanguage(value);
     else this.patch({ [key]: DEFAULT_FILTERS[key] });
   }
 
   toggleTag(tag: string) {
-    const tags = this.filters().tags;
-    this.patch({ tags: tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag] });
+    this.patch({ tags: toggled(this.filters().tags, tag) });
+  }
+
+  toggleLanguage(key: string) {
+    this.patch({ languages: toggled(this.filters().languages, key) });
   }
 
   reset() {
@@ -175,6 +180,14 @@ export class FilterState {
     );
     return sortGames(matched, this.sort());
   }
+}
+
+function toggled(list: string[], v: string): string[] {
+  return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+}
+
+export function capitalize(s: string): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
 @Injectable({ providedIn: 'root' })

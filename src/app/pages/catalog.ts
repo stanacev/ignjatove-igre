@@ -124,7 +124,7 @@ import { EmptyState } from '../shared/status';
         @for (c of f.chips(); track c.key + c.label) {
           <span class="tag">
             {{ c.label }}
-            <button type="button" class="ml-0.5 flex" [attr.aria-label]="'Ukloni ' + c.label" (click)="f.clear(c.key, c.tag)">
+            <button type="button" class="ml-0.5 flex" [attr.aria-label]="'Ukloni ' + c.label" (click)="f.clear(c.key, c.value)">
               <app-icon name="x" [size]="14" />
             </button>
           </span>

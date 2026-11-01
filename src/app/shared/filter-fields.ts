@@ -84,24 +84,26 @@ export const TIME_SCALE: SliderScale = {
     </div>
 
     @if (languages().length > 1) {
-      <div [class]="row() ? 'flex min-w-[150px] flex-[1_1_150px] flex-col gap-2' : 'flex flex-col gap-2.5'">
+      <!-- više jezika odjednom (unija, kao tagovi) -->
+      <div [class]="row() ? 'flex min-w-[220px] flex-[2_1_220px] flex-col gap-2' : 'flex flex-col gap-2.5'">
         <div [class]="headClass()">
-          <label [for]="id + '-lang'" [class]="labelClass()">Jezik</label>
+          <span [class]="labelClass()">Jezik</span>
         </div>
-        <div class="relative">
-          <select
-            [id]="id + '-lang'"
-            class="inp"
-            [class.text-base]="row()"
-            [style.background-color]="row() ? '#010736' : null"
-            (change)="onLanguage($event)"
-          >
-            <option value="" [selected]="state().filters().language === null">Svi</option>
-            @for (l of languages(); track l.key) {
-              <option [value]="l.key" [selected]="state().filters().language === l.key">{{ l.label }} ({{ l.count }})</option>
-            }
-          </select>
-          <app-icon name="chev" [size]="18" class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-cream-300" />
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Jezik">
+          @for (l of languages(); track l.key) {
+            <button
+              type="button"
+              class="tag cursor-pointer transition-colors hover:border-ink-500"
+              [class]="isLang(l.key) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
+              [attr.aria-pressed]="isLang(l.key)"
+              (click)="state().toggleLanguage(l.key)"
+            >
+              @if (isLang(l.key)) {
+                <app-icon name="check" [size]="14" />
+              }
+              {{ l.label }} <span class="opacity-60">{{ l.count }}</span>
+            </button>
+          }
         </div>
       </div>
     }
@@ -242,10 +244,7 @@ export class FilterFields {
 
   protected languages = computed(() => languageOptions(this.games.games()));
 
-  protected onLanguage(e: Event) {
-    const v = (e.target as HTMLSelectElement).value;
-    this.state().patch({ language: v || null });
-  }
+  protected isLang = (key: string) => this.state().filters().languages.includes(key);
 
   protected onPlayers(e: Event) {
     const v = (e.target as HTMLSelectElement).value;

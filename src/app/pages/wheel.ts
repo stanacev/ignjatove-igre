@@ -1,6 +1,6 @@
 import { Component, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { WheelFilters, playersLabel } from '../core/filters';
+import { WheelFilters, capitalize, playersLabel } from '../core/filters';
 import { decimal, gamesCount, range, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
 import { Game } from '../core/models';
@@ -182,7 +182,7 @@ export class Wheel implements OnDestroy {
     if (fl.players !== null) parts.push(playersLabel(fl.players));
     if (fl.timeMax !== null) parts.push(`do ${fl.timeMax} min`);
     if (fl.tags.length) parts.push(fl.tags.join(', '));
-    if (fl.language) parts.push(fl.language[0].toUpperCase() + fl.language.slice(1));
+    if (fl.languages.length) parts.push(fl.languages.map(capitalize).join(', '));
     return parts.join(' · ') || 'Sve igre';
   });
 

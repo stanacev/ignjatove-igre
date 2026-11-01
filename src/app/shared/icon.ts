@@ -30,6 +30,8 @@ const ICONS = {
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+  // figurica kao iz "Ne ljuti se, čoveče" – za broj odigranih partija
+  pawn: '<circle cx="12" cy="6" r="3.6" fill="currentColor" stroke="none"/><path d="M9.8 9.4c-.2 3.6-1.5 6.4-3.5 9-.6.8-.1 2 .9 2h9.6c1 0 1.5-1.2.9-2-2-2.6-3.3-5.4-3.5-9z" fill="currentColor" stroke="none"/>',
   external: '<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   heading: '<path d="M6 4v16M18 4v16M6 12h12"/>',

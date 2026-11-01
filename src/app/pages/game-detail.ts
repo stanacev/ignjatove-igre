@@ -273,7 +273,7 @@ export class GameDetail {
     if (g.language) out.push({ icon: 'globe', label: 'Jezik', value: g.language });
     if (g.rating !== null) out.push({ icon: 'star', label: 'Ignjatova ocena', value: `${decimal(g.rating, 1).replace(',0', '')} / 10` });
     // admin uvek vidi brojač partija (sa − i +), i kad još nije upisan
-    if (g.plays !== null || this.auth.isAdmin()) out.push({ icon: 'dice', label: 'Odigrano', value: playsText(g.plays ?? 0) });
+    if (g.plays !== null || this.auth.isAdmin()) out.push({ icon: 'pawn', label: 'Odigrano', value: playsText(g.plays ?? 0) });
     return out;
   });
 

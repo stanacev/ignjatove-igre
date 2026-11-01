@@ -29,7 +29,7 @@ import { WeightBar } from './weight-bar';
             class="absolute right-2 bottom-2 flex items-center gap-1 rounded-sm bg-ink-950/85 px-1.5 py-0.5 font-display text-[13px] text-cream-50 shadow-pop"
             [attr.aria-label]="'Odigrano ' + game().plays + ' puta'"
           >
-            <app-icon name="dice" [size]="13" [stroke]="2.2" />{{ game().plays }}
+            <app-icon name="pawn" [size]="14" [stroke]="2.2" />{{ game().plays }}
           </span>
         }
       </div>

@@ -13,6 +13,8 @@ export interface Filters {
   timeMax: number | null;
   /** Igra mora imati sve izabrane tagove */
   tags: string[];
+  /** Jezik malim slovima (npr. "srpski"); null = svi */
+  language: string | null;
 }
 
 export type Sort = 'name' | 'weight-asc' | 'weight-desc' | 'time-asc' | 'time-desc';
@@ -25,7 +27,7 @@ export const SORT_OPTIONS: { value: Sort; label: string; short: string }[] = [
   { value: 'time-desc', label: 'Trajanje: duže → kraće', short: 'Duže' },
 ];
 
-export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null, tags: [] };
+export const DEFAULT_FILTERS: Filters = { weight: [1, 5], players: null, timeMax: null, tags: [], language: null };
 
 export function playersLabel(n: number): string {
   if (n === PLAYERS_10_PLUS) return '10+ igrača';
@@ -51,7 +53,30 @@ export function matchesFilters(g: Game, f: Filters): boolean {
     const own = g.tags.map((t) => t.toLowerCase());
     if (!f.tags.every((t) => own.includes(t.toLowerCase()))) return false;
   }
+  if (f.language !== null && languageKey(g.language) !== f.language) return false;
   return true;
+}
+
+/** Ključ za poređenje jezika: "Engleski" i "engleski " su isti jezik */
+export function languageKey(language: string | null): string | null {
+  const key = language?.trim().toLowerCase();
+  return key || null;
+}
+
+/** Jezici koji postoje u katalogu (za filter), najčešći prvi */
+export function languageOptions(games: Game[]): { key: string; label: string; count: number }[] {
+  const byKey = new Map<string, { key: string; label: string; count: number }>();
+  for (const g of games) {
+    const key = languageKey(g.language);
+    if (!key) continue;
+    const label = g.language!.trim();
+    const o = byKey.get(key) ?? { key, label, count: 0 };
+    o.count++;
+    // prikaz: varijanta sa velikim početnim slovom, ako postoji
+    if (label[0] !== label[0].toLowerCase()) o.label = label;
+    byKey.set(key, o);
+  }
+  return [...byKey.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'sr'));
 }
 
 const collator = new Intl.Collator('sr-Latn', { sensitivity: 'base', numeric: true });
@@ -108,6 +133,7 @@ export class FilterState {
     }
     if (f.players !== null) chips.push({ key: 'players', label: playersLabel(f.players) });
     if (f.timeMax !== null) chips.push({ key: 'timeMax', label: `do ${f.timeMax} min` });
+    if (f.language !== null) chips.push({ key: 'language', label: `Jezik: ${f.language[0].toUpperCase()}${f.language.slice(1)}` });
     for (const tag of f.tags) chips.push({ key: 'tags', label: tag, tag });
     return chips;
   });

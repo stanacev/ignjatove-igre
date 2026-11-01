@@ -180,6 +180,7 @@ export class Wheel implements OnDestroy {
     if (fl.players !== null) parts.push(playersLabel(fl.players));
     if (fl.timeMax !== null) parts.push(`do ${fl.timeMax} min`);
     if (fl.tags.length) parts.push(fl.tags.join(', '));
+    if (fl.language) parts.push(fl.language[0].toUpperCase() + fl.language.slice(1));
     return parts.join(' · ') || 'Sve igre';
   });
 

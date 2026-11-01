@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { FilterState, PLAYER_OPTIONS, SORT_OPTIONS, Sort, playersLabel, weightRangeLabel } from '../core/filters';
+import { FilterState, PLAYER_OPTIONS, languageOptions, SORT_OPTIONS, Sort, playersLabel, weightRangeLabel } from '../core/filters';
 import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
 import { TAG_GROUPS, TagGroup } from '../core/tags';
@@ -82,6 +82,29 @@ export const TIME_SCALE: SliderScale = {
         <app-icon name="chev" [size]="18" class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-cream-300" />
       </div>
     </div>
+
+    @if (languages().length > 1) {
+      <div [class]="row() ? 'flex min-w-[150px] flex-[1_1_150px] flex-col gap-2' : 'flex flex-col gap-2.5'">
+        <div [class]="headClass()">
+          <label [for]="id + '-lang'" [class]="labelClass()">Jezik</label>
+        </div>
+        <div class="relative">
+          <select
+            [id]="id + '-lang'"
+            class="inp"
+            [class.text-base]="row()"
+            [style.background-color]="row() ? '#010736' : null"
+            (change)="onLanguage($event)"
+          >
+            <option value="" [selected]="state().filters().language === null">Svi</option>
+            @for (l of languages(); track l.key) {
+              <option [value]="l.key" [selected]="state().filters().language === l.key">{{ l.label }} ({{ l.count }})</option>
+            }
+          </select>
+          <app-icon name="chev" [size]="18" class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-cream-300" />
+        </div>
+      </div>
+    }
 
     <div [class]="row() ? 'flex min-w-[200px] flex-[2_1_200px] flex-col gap-2' : 'flex flex-col gap-2.5'">
       <div [class]="headClass()">
@@ -238,6 +261,13 @@ export class FilterFields {
     return la === lb ? la : `${la} → ${lb}`;
   });
   protected timeText = computed(() => TIME_SCALE.text(this.state().filters().timeMax ?? TIME_ANY));
+
+  protected languages = computed(() => languageOptions(this.games.games()));
+
+  protected onLanguage(e: Event) {
+    const v = (e.target as HTMLSelectElement).value;
+    this.state().patch({ language: v || null });
+  }
 
   protected onPlayers(e: Event) {
     const v = (e.target as HTMLSelectElement).value;

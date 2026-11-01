@@ -36,7 +36,7 @@ import { WeightBar } from './weight-bar';
             [disabled]="saving()"
             (click)="addPlay($event)"
           >
-            <app-icon name="plus" [size]="13" [stroke]="2.4" /><app-icon name="pawn" [size]="14" />
+            <app-icon name="plus" [size]="13" [stroke]="2.4" />
           </button>
         }
         @if (game().plays) {

@@ -70,6 +70,16 @@ export class GamesService {
     return saved;
   }
 
+  /** Uklanja tag iz svih igara koje ga imaju. Vraća broj izmenjenih igara. */
+  async removeTagEverywhere(tag: string): Promise<number> {
+    const affected = this.games().filter((g) => g.tags.includes(tag));
+    for (const g of affected) {
+      const saved = await this.backend.save(g.id, { tags: g.tags.filter((t) => t !== tag) });
+      this.setGames(this.games().map((x) => (x.id === g.id ? saved : x)));
+    }
+    return affected.length;
+  }
+
   async remove(game: Game): Promise<void> {
     await this.backend.remove(game);
     this.setGames(this.games().filter((g) => g.id !== game.id));

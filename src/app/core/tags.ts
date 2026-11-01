@@ -95,6 +95,15 @@ export class TagGroupsService {
     if (error) throw error;
   }
 
+  /** Briše tag iz grupa (iz igara ga uklanja GamesService.removeTagEverywhere). */
+  async remove(tag: string): Promise<void> {
+    const { [tag]: _, ...rest } = this.map();
+    this.update(rest);
+    if (IS_DEMO) return;
+    const { error } = await supabase().from('tag_groups').delete().eq('tag', tag);
+    if (error) throw error;
+  }
+
   private async load() {
     if (IS_DEMO) return;
     const { data, error } = await supabase().from('tag_groups').select('tag, grp');

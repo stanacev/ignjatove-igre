@@ -10,6 +10,7 @@ import { ToastService } from '../core/ui.service';
 import { Youtube } from '../shared/content';
 import { Cover } from '../shared/cover';
 import { Header } from '../shared/header';
+import { Modal } from '../shared/modal';
 import { Icon } from '../shared/icon';
 
 type Field = 'image' | 'name' | 'players' | 'time' | 'weight' | 'rating' | 'plays' | 'youtube' | 'pdf';
@@ -27,7 +28,7 @@ function num(s: string): number | null {
 
 @Component({
   selector: 'app-game-form',
-  imports: [NgTemplateOutlet, RouterLink, Youtube, Cover, Header, Icon],
+  imports: [NgTemplateOutlet, RouterLink, Youtube, Cover, Header, Icon, Modal],
   template: `
     <app-header />
     <main class="mx-auto max-w-[1240px] px-4 pt-4 pb-32 lg:px-10 lg:pt-8">
@@ -180,37 +181,83 @@ function num(s: string): number | null {
                     </div>
                   </div>
                 }
-                <!-- svi postojeći tagovi po grupama: klik dodaje/uklanja -->
-                <div class="mt-1 flex flex-col gap-3 rounded border border-ink-700 bg-ink-900/50 p-3">
+                <!-- svi postojeći tagovi po grupama: klik dodaje/uklanja; u režimu uređivanja klik briše tag svuda -->
+                <div class="mt-1 flex flex-col gap-3 rounded border bg-ink-900/50 p-3" [class]="editTags() ? 'border-danger-300/60' : 'border-ink-700'">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-slate-400">
+                      {{ editTags() ? 'Klikni tag koji želiš da obrišeš iz svih igara.' : 'Klikni tag da ga dodaš ili ukloniš.' }}
+                    </span>
+                    <button type="button" class="btn btn-g h-8 px-2 text-xs" [class.!text-danger-300]="!editTags()" (click)="editTags.set(!editTags())">
+                      @if (editTags()) {
+                        <app-icon name="check" [size]="14" />Gotovo
+                      } @else {
+                        <app-icon name="trash" [size]="14" />Obriši tagove
+                      }
+                    </button>
+                  </div>
                   @for (g of tagGroups(); track g.name) {
                     <div class="flex flex-col gap-2" role="group" [attr.aria-label]="g.name">
                       <span class="label-caps">{{ g.name }}</span>
                       <div class="flex flex-wrap gap-2">
                         @for (t of g.tags; track t) {
-                          <button
-                            type="button"
-                            class="tag cursor-pointer transition-colors hover:border-ink-500"
-                            [class]="tags().includes(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
-                            [attr.aria-pressed]="tags().includes(t)"
-                            (click)="toggleTag(t)"
-                          >
-                            @if (tags().includes(t)) {
-                              <app-icon name="check" [size]="14" />
-                            }
-                            {{ t }}
-                          </button>
-                          @if (g.name === 'Ostalo') {
-                            <button type="button" class="-ml-1 text-xs font-bold text-slate-400 underline hover:text-cream-50" (click)="pendingTag.set(t)">
-                              svrstaj
+                          @if (editTags()) {
+                            <button
+                              type="button"
+                              class="tag cursor-pointer !border-danger-300/50 !text-danger-300 transition-colors hover:!bg-danger-600 hover:!text-white"
+                              [attr.aria-label]="'Obriši tag ' + t"
+                              (click)="askDeleteTag(t)"
+                            >
+                              <app-icon name="x" [size]="14" />{{ t }}
                             </button>
+                          } @else {
+                            <button
+                              type="button"
+                              class="tag cursor-pointer transition-colors hover:border-ink-500"
+                              [class]="tags().includes(t) ? '!border-cream-50 bg-cream-50 !text-ink-950' : ''"
+                              [attr.aria-pressed]="tags().includes(t)"
+                              (click)="toggleTag(t)"
+                            >
+                              @if (tags().includes(t)) {
+                                <app-icon name="check" [size]="14" />
+                              }
+                              {{ t }}
+                            </button>
+                            @if (g.name === 'Ostalo') {
+                              <button type="button" class="-ml-1 text-xs font-bold text-slate-400 underline hover:text-cream-50" (click)="pendingTag.set(t)">
+                                svrstaj
+                              </button>
+                            }
                           }
                         }
                       </div>
                     </div>
                   }
-                  <span class="field-hint">Klikni tag da ga dodaš ili ukloniš. Novi tag ukucaj u polje iznad.</span>
+                  @if (!editTags()) {
+                    <span class="field-hint">Novi tag ukucaj u polje iznad.</span>
+                  }
                 </div>
               </div>
+
+              @if (deleteTag(); as t) {
+                <app-modal labelledBy="del-tag-title" (close)="deleteTag.set(null)">
+                  <div class="flex flex-col gap-3 p-6">
+                    <h2 id="del-tag-title" class="m-0 font-display text-[22px] font-normal">Obrisati tag „{{ t }}“?</h2>
+                    <p class="m-0 text-[15px] leading-relaxed text-cream-300">
+                      @if (tagUsage(t); as n) {
+                        Tag će biti uklonjen iz {{ n }} {{ n === 1 ? 'igre' : 'igara' }} i iz liste tagova.
+                      } @else {
+                        Tag će biti uklonjen iz liste tagova. Nijedna igra ga trenutno nema.
+                      }
+                    </p>
+                    <div class="mt-3 flex justify-end gap-3">
+                      <button type="button" class="btn btn-s" (click)="deleteTag.set(null)">Otkaži</button>
+                      <button type="button" class="btn btn-d" [disabled]="deletingTag()" (click)="confirmDeleteTag(t)">
+                        <app-icon name="trash" [size]="18" />{{ deletingTag() ? 'Brisanje…' : 'Obriši tag' }}
+                      </button>
+                    </div>
+                  </div>
+                </app-modal>
+              }
 
               <div class="grid gap-5 sm:grid-cols-3">
                 <div class="flex flex-col gap-2">
@@ -370,6 +417,34 @@ export class GameForm implements OnDestroy {
   protected readonly groupNames = GROUP_NAMES;
   /** Svi tagovi po grupama (i oni koji još nisu ni na jednoj igri); bez grupe → "Ostalo" */
   protected tagGroups = computed(() => this.tagGroupsSvc.grouped([...new Set([...this.allTags(), ...this.tags()])], false));
+  protected editTags = signal(false);
+  protected deleteTag = signal<string | null>(null);
+  protected deletingTag = signal(false);
+  protected tagUsage = (t: string) => this.games.games().filter((g) => g.tags.includes(t)).length;
+
+  protected askDeleteTag(t: string) {
+    this.deleteTag.set(t);
+  }
+
+  /** Briše tag iz svih igara u bazi i iz grupa tagova. */
+  protected async confirmDeleteTag(t: string) {
+    this.deletingTag.set(true);
+    try {
+      const n = await this.games.removeTagEverywhere(t);
+      await this.tagGroupsSvc.remove(t);
+      this.tags.update((tags) => tags.filter((x) => x !== t));
+      // i verzija iz koje je forma popunjena više nema taj tag, da ga čuvanje ne bi vratilo
+      if (this.base) this.base = { ...this.base, tags: this.base.tags.filter((x) => x !== t) };
+      this.toast.success(n ? `Tag „${t}“ je obrisan iz ${n} ${n === 1 ? 'igre' : 'igara'}` : `Tag „${t}“ je obrisan`);
+    } catch (e) {
+      console.error(e);
+      this.toast.error('Brisanje taga nije uspelo. Pokušaj ponovo.');
+    } finally {
+      this.deletingTag.set(false);
+      this.deleteTag.set(null);
+    }
+  }
+
   /** Novi tag za koji Ignjat bira grupu */
   protected pendingTag = signal<string | null>(null);
   protected tagSuggestions = computed(() => this.allTags().filter((t) => !this.tags().includes(t)));

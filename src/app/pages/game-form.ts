@@ -5,7 +5,7 @@ import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
 import { Game, GameInput } from '../core/models';
 import { resizeImage, youtubeId } from '../core/media';
-import { TAG_GROUPS, TagGroup } from '../core/tags';
+import { GROUP_NAMES, GroupName, TagGroupsService } from '../core/tags';
 import { ToastService } from '../core/ui.service';
 import { Youtube } from '../shared/content';
 import { Cover } from '../shared/cover';
@@ -169,6 +169,17 @@ function num(s: string): number | null {
                     }
                   </datalist>
                 </div>
+                @if (pendingTag(); as t) {
+                  <div class="flex flex-col gap-2 rounded border border-cream-50/60 bg-ink-800 p-3" role="group" aria-label="Grupa za novi tag">
+                    <span class="text-sm font-bold">Gde spada „{{ t }}“?</span>
+                    <div class="flex flex-wrap gap-2">
+                      @for (g of groupNames; track g) {
+                        <button type="button" class="btn btn-s h-9 px-3 text-sm" (click)="chooseGroup(t, g)">{{ g }}</button>
+                      }
+                      <button type="button" class="btn btn-g h-9 px-3 text-sm" (click)="chooseGroup(t, null)">Kasnije</button>
+                    </div>
+                  </div>
+                }
                 <!-- svi postojeći tagovi po grupama: klik dodaje/uklanja -->
                 <div class="mt-1 flex flex-col gap-3 rounded border border-ink-700 bg-ink-900/50 p-3">
                   @for (g of tagGroups(); track g.name) {
@@ -188,6 +199,11 @@ function num(s: string): number | null {
                             }
                             {{ t }}
                           </button>
+                          @if (g.name === 'Ostalo') {
+                            <button type="button" class="-ml-1 text-xs font-bold text-slate-400 underline hover:text-cream-50" (click)="pendingTag.set(t)">
+                              svrstaj
+                            </button>
+                          }
                         }
                       </div>
                     </div>
@@ -350,14 +366,12 @@ export class GameForm implements OnDestroy {
     [...new Set(this.games.games().flatMap((g) => g.tags))].sort((a, b) => a.localeCompare(b, 'sr')),
   );
   /** Grupe tagova kao u filteru; tagovi van grupa idu u "Ostalo" */
-  protected tagGroups = computed<TagGroup[]>(() => {
-    const all = this.allTags();
-    const known = new Set(TAG_GROUPS.flatMap((g) => g.tags));
-    const groups = TAG_GROUPS.map((g) => ({ ...g, tags: g.tags }));
-    const rest = all.filter((t) => !known.has(t));
-    if (rest.length) groups.push({ name: 'Ostalo', open: true, tags: rest });
-    return groups;
-  });
+  private tagGroupsSvc = inject(TagGroupsService);
+  protected readonly groupNames = GROUP_NAMES;
+  /** Svi tagovi po grupama (i oni koji još nisu ni na jednoj igri); bez grupe → "Ostalo" */
+  protected tagGroups = computed(() => this.tagGroupsSvc.grouped([...new Set([...this.allTags(), ...this.tags()])], false));
+  /** Novi tag za koji Ignjat bira grupu */
+  protected pendingTag = signal<string | null>(null);
   protected tagSuggestions = computed(() => this.allTags().filter((t) => !this.tags().includes(t)));
   protected language = signal('');
   protected rating = signal('');
@@ -507,6 +521,19 @@ export class GameForm implements OnDestroy {
     const final = existing ?? tag;
     if (this.tags().some((x) => x.toLocaleLowerCase('sr') === final.toLocaleLowerCase('sr'))) return;
     this.tags.update((tags) => [...tags, final]);
+    if (!this.tagGroupsSvc.groupOf(final)) this.pendingTag.set(final);
+  }
+
+  protected async chooseGroup(tag: string, group: GroupName | null) {
+    this.pendingTag.set(null);
+    if (!group) return;
+    try {
+      await this.tagGroupsSvc.setGroup(tag, group);
+      this.toast.success(`„${tag}“ je u grupi ${group}`);
+    } catch (e) {
+      console.error(e);
+      this.toast.error('Grupa nije sačuvana. Da li je pokrenut SQL tag-grupe.sql?');
+    }
   }
 
   protected onFile(e: Event) {

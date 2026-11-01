@@ -3,7 +3,7 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { FilterState, PLAYER_OPTIONS, languageOptions, SORT_OPTIONS, Sort, playersLabel, weightRangeLabel } from '../core/filters';
 import { decimal, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
-import { TAG_GROUPS, TagGroup } from '../core/tags';
+import { TagGroupsService } from '../core/tags';
 import { Icon } from './icon';
 import { RangeSlider, SliderScale } from './range-slider';
 
@@ -141,25 +141,16 @@ export const TIME_SCALE: SliderScale = {
           </span>
         </button>
         @if (tagsOpen()) {
-          <!-- tagovi po grupama; "Mehanika" je sklopljena dok se ne otvori -->
+          <!-- tagovi po grupama (grupe se čuvaju u bazi, tabela tag_groups) -->
           <div class="flex flex-col gap-3.5" aria-label="Tagovi">
             @for (g of groups(); track g.name) {
               <div class="flex flex-col gap-2" role="group" [attr.aria-label]="g.name">
-                @if (g.open) {
-                  <span class="label-caps">{{ g.name }}</span>
-                } @else {
-                  <button type="button" class="label-caps flex items-center gap-1 self-start hover:text-cream-50" [attr.aria-expanded]="isGroupOpen(g.name)" (click)="toggleGroup(g.name)">
-                    {{ g.name }} ({{ g.tags.length }})
-                    <app-icon name="chev" [size]="14" [class.rotate-180]="isGroupOpen(g.name)" />
-                  </button>
-                }
-                @if (g.open || isGroupOpen(g.name) || hasSelected(g.tags)) {
-                  <div class="flex flex-wrap gap-2">
-                    @for (t of g.open || isGroupOpen(g.name) ? g.tags : selectedOf(g.tags); track t) {
-                      <ng-container *ngTemplateOutlet="chip; context: { $implicit: t }" />
-                    }
-                  </div>
-                }
+                <span class="label-caps">{{ g.name }}</span>
+                <div class="flex flex-wrap gap-2">
+                  @for (t of g.tags; track t) {
+                    <ng-container *ngTemplateOutlet="chip; context: { $implicit: t }" />
+                  }
+                </div>
               </div>
             }
           </div>
@@ -230,23 +221,10 @@ export class FilterFields {
     [...new Set(this.games.games().flatMap((g) => g.tags))].sort((a, b) => a.localeCompare(b, 'sr')),
   );
   protected tagsOpen = signal(false);
-  private openGroups = signal<string[]>([]);
+  private tagGroups = inject(TagGroupsService);
 
-  /** Grupe sa tagovima koji stvarno postoje u katalogu; nepoznati tagovi idu u "Ostalo" */
-  protected groups = computed<TagGroup[]>(() => {
-    const present = new Set(this.allTags());
-    const known = new Set(TAG_GROUPS.flatMap((g) => g.tags));
-    const groups = TAG_GROUPS.map((g) => ({ ...g, tags: g.tags.filter((t) => present.has(t)) }));
-    const rest = this.allTags().filter((t) => !known.has(t));
-    if (rest.length) groups.push({ name: 'Ostalo', open: false, tags: rest });
-    return groups.filter((g) => g.tags.length);
-  });
-  protected isGroupOpen = (name: string) => this.openGroups().includes(name);
-  protected toggleGroup(name: string) {
-    this.openGroups.update((o) => (o.includes(name) ? o.filter((x) => x !== name) : [...o, name]));
-  }
-  protected selectedOf = (tags: string[]) => tags.filter((t) => this.isOn(t));
-  protected hasSelected = (tags: string[]) => tags.some((t) => this.isOn(t));
+  /** Grupe sa tagovima koji stvarno postoje u katalogu; tagovi bez grupe idu u "Ostalo" */
+  protected groups = computed(() => this.tagGroups.grouped(this.allTags(), true));
   protected isOn = (t: string) => this.state().filters().tags.includes(t);
   /** Klase za red sa nazivom polja – iste u svim poljima, da sve kontrole počnu na istoj visini */
   protected headClass = computed(() => (this.row() ? 'flex h-7 items-center justify-between gap-2' : 'flex items-baseline justify-between'));

@@ -17,11 +17,12 @@ export interface Filters {
   language: string | null;
 }
 
-export type Sort = 'name' | 'rating-desc' | 'weight-asc' | 'weight-desc' | 'time-asc' | 'time-desc';
+export type Sort = 'name' | 'rating-desc' | 'rating-asc' | 'weight-asc' | 'weight-desc' | 'time-asc' | 'time-desc';
 
 export const SORT_OPTIONS: { value: Sort; label: string; short: string }[] = [
   { value: 'name', label: 'Abecedno (A–Z)', short: 'A–Z' },
-  { value: 'rating-desc', label: 'Ignjatova ocena: najbolje prvo', short: 'Ocena' },
+  { value: 'rating-desc', label: 'Ignjatova ocena: najbolje prvo', short: 'Najbolje' },
+  { value: 'rating-asc', label: 'Ignjatova ocena: najlošije prvo', short: 'Najlošije' },
   { value: 'weight-asc', label: 'Težina: lakše → teže', short: 'Lakše' },
   { value: 'weight-desc', label: 'Težina: teže → lakše', short: 'Teže' },
   { value: 'time-asc', label: 'Trajanje: kraće → duže', short: 'Kraće' },
@@ -91,6 +92,9 @@ export function sortGames(games: Game[], sort: Sort): Game[] {
     case 'rating-desc':
       // igre bez ocene idu na kraj
       return sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1) || byName(a, b));
+    case 'rating-asc':
+      // i ovde igre bez ocene idu na kraj
+      return sorted.sort((a, b) => (a.rating ?? 99) - (b.rating ?? 99) || byName(a, b));
     case 'weight-asc':
       return sorted.sort((a, b) => a.weight - b.weight || byName(a, b));
     case 'weight-desc':

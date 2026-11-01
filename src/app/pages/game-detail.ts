@@ -5,6 +5,7 @@ import { AuthService } from '../core/auth.service';
 import { CatalogFilters } from '../core/filters';
 import { decimal, gamesCount, playsText, range, weightLabel } from '../core/format';
 import { GamesService } from '../core/games.service';
+import { Game } from '../core/models';
 import { youtubeId } from '../core/media';
 import { ToastService, ViewportService } from '../core/ui.service';
 import { Markdown, Youtube } from '../shared/content';
@@ -120,7 +121,28 @@ type Tab = 'opis' | 'video' | 'pravila';
                     <dt class="flex items-center gap-1.5 text-[11px] font-extrabold tracking-[0.06em] text-slate-400 uppercase">
                       <app-icon [name]="x.icon" [size]="14" />{{ x.label }}
                     </dt>
-                    <dd class="m-0 font-display text-[15px]">{{ x.value }}</dd>
+                    @if (x.label === 'Odigrano' && auth.isAdmin()) {
+                      <!-- Ignjat menja broj partija direktno, bez forme -->
+                      <dd class="m-0 flex items-center gap-2">
+                        <button
+                          type="button"
+                          class="btn btn-s size-8 !px-0 text-lg"
+                          aria-label="Jedna partija manje"
+                          [disabled]="!(g.plays ?? 0) || savingPlays()"
+                          (click)="changePlays(g, -1)"
+                        >−</button>
+                        <span class="min-w-6 text-center font-display text-lg" aria-live="polite">{{ g.plays ?? 0 }}</span>
+                        <button
+                          type="button"
+                          class="btn btn-p size-8 !px-0 text-lg"
+                          aria-label="Jedna partija više"
+                          [disabled]="savingPlays()"
+                          (click)="changePlays(g, 1)"
+                        >+</button>
+                      </dd>
+                    } @else {
+                      <dd class="m-0 font-display text-[15px]">{{ x.value }}</dd>
+                    }
                   </div>
                 }
               </dl>
@@ -250,7 +272,8 @@ export class GameDetail {
     if (!g) return out;
     if (g.language) out.push({ icon: 'globe', label: 'Jezik', value: g.language });
     if (g.rating !== null) out.push({ icon: 'star', label: 'Ignjatova ocena', value: `${decimal(g.rating, 1).replace(',0', '')} / 10` });
-    if (g.plays !== null) out.push({ icon: 'dice', label: 'Odigrano', value: playsText(g.plays) });
+    // admin uvek vidi brojač partija (sa − i +), i kad još nije upisan
+    if (g.plays !== null || this.auth.isAdmin()) out.push({ icon: 'dice', label: 'Odigrano', value: playsText(g.plays ?? 0) });
     return out;
   });
 
@@ -268,6 +291,21 @@ export class GameDetail {
     if (!n) return '';
     return `${gamesCount(this.filters.apply(this.games.games()).length)}, ${n} ${n === 1 ? 'filter' : 'filtera'}`;
   });
+
+  protected savingPlays = signal(false);
+
+  protected async changePlays(g: Game, delta: number) {
+    const plays = Math.max(0, (g.plays ?? 0) + delta);
+    this.savingPlays.set(true);
+    try {
+      await this.games.setPlays(g, plays);
+    } catch (e) {
+      console.error(e);
+      this.toast.error('Broj partija nije sačuvan. Proveri internet.');
+    } finally {
+      this.savingPlays.set(false);
+    }
+  }
 
   protected confirmDelete = signal(false);
   protected deleting = signal(false);

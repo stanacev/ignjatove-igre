@@ -24,6 +24,14 @@ import { WeightBar } from './weight-bar';
             <app-icon name="star" [size]="13" [stroke]="2.2" class="text-cream-50" />{{ rating() }}
           </span>
         }
+        @if (game().plays) {
+          <span
+            class="absolute right-2 bottom-2 flex items-center gap-1 rounded-sm bg-ink-950/85 px-1.5 py-0.5 font-display text-[13px] text-cream-50 shadow-pop"
+            [attr.aria-label]="'Odigrano ' + game().plays + ' puta'"
+          >
+            <app-icon name="dice" [size]="13" [stroke]="2.2" />{{ game().plays }}
+          </span>
+        }
       </div>
       <div class="flex flex-1 flex-col gap-2 px-2.5 pt-2.5 pb-3 lg:px-3 lg:pb-3.5">
         <h3 class="clamp2 m-0 min-h-9 font-display text-[15px] leading-[1.2] font-normal lg:text-base">

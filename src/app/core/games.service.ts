@@ -63,6 +63,13 @@ export class GamesService {
     return saved;
   }
 
+  /** Brzo menjanje broja odigranih partija (samo to polje se šalje). */
+  async setPlays(game: Game, plays: number): Promise<Game> {
+    const saved = await this.backend.save(game.id, { plays });
+    this.setGames(this.games().map((g) => (g.id === game.id ? saved : g)));
+    return saved;
+  }
+
   async remove(game: Game): Promise<void> {
     await this.backend.remove(game);
     this.setGames(this.games().filter((g) => g.id !== game.id));

@@ -1,6 +1,9 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../core/auth.service';
 import { decimal, range } from '../core/format';
+import { GamesService } from '../core/games.service';
+import { ToastService } from '../core/ui.service';
 import { Game } from '../core/models';
 import { Cover } from './cover';
 import { Icon } from './icon';
@@ -23,6 +26,18 @@ import { WeightBar } from './weight-bar';
           >
             <app-icon name="star" [size]="13" [stroke]="2.2" class="text-cream-50" />{{ rating() }}
           </span>
+        }
+        @if (auth.isAdmin()) {
+          <!-- Ignjat: brzo +1 partija iz kataloga (ne otvara igru) -->
+          <button
+            type="button"
+            class="absolute bottom-2 left-2 flex size-8 items-center justify-center rounded-sm bg-cream-50 text-ink-950 shadow-pop transition-colors hover:bg-white disabled:opacity-60"
+            [attr.aria-label]="'Dodaj odigranu partiju: ' + game().name"
+            [disabled]="saving()"
+            (click)="addPlay($event)"
+          >
+            <app-icon name="plus" [size]="18" [stroke]="2.6" />
+          </button>
         }
         @if (game().plays) {
           <span
@@ -52,6 +67,27 @@ import { WeightBar } from './weight-bar';
 })
 export class GameCard {
   readonly game = input.required<Game>();
+
+  protected auth = inject(AuthService);
+  private games = inject(GamesService);
+  private toast = inject(ToastService);
+  protected saving = signal(false);
+
+  protected async addPlay(e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
+    const g = this.game();
+    this.saving.set(true);
+    try {
+      const saved = await this.games.setPlays(g, (g.plays ?? 0) + 1);
+      this.toast.success(`${g.name}: ${saved.plays}. partija`);
+    } catch (err) {
+      console.error(err);
+      this.toast.error('Partija nije sačuvana. Proveri internet.');
+    } finally {
+      this.saving.set(false);
+    }
+  }
   protected players = () => range(this.game().playersMin, this.game().playersMax);
   protected time = () => range(this.game().timeMin, this.game().timeMax);
   protected weight = () => decimal(this.game().weight);

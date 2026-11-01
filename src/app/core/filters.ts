@@ -11,7 +11,7 @@ export interface Filters {
   players: number | null;
   /** null = bilo koje trajanje */
   timeMax: number | null;
-  /** Igra mora imati sve izabrane tagove */
+  /** Igra mora imati bar jedan od izabranih tagova */
   tags: string[];
   /** Jezik malim slovima (npr. "srpski"); null = svi */
   language: string | null;
@@ -53,7 +53,8 @@ export function matchesFilters(g: Game, f: Filters): boolean {
   if (f.timeMax !== null && (g.timeMax ?? g.timeMin) > f.timeMax) return false;
   if (f.tags.length) {
     const own = g.tags.map((t) => t.toLowerCase());
-    if (!f.tags.every((t) => own.includes(t.toLowerCase()))) return false;
+    // unija: dovoljno je da igra ima bar jedan od izabranih tagova
+    if (!f.tags.some((t) => own.includes(t.toLowerCase()))) return false;
   }
   if (f.language !== null && languageKey(g.language) !== f.language) return false;
   return true;

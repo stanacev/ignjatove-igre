@@ -162,7 +162,7 @@ export const TIME_SCALE: SliderScale = {
           </div>
         }
         @if (state().filters().tags.length > 1) {
-          <span class="field-hint">Prikazuju se igre koje imaju sve izabrane tagove.</span>
+          <span class="field-hint">Prikazuju se igre koje imaju bar jedan od izabranih tagova.</span>
         }
         <ng-template #chip let-t>
           <button

@@ -32,6 +32,8 @@ const ICONS = {
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   // figurica kao iz "Ne ljuti se, čoveče" – za broj odigranih partija
   pawn: '<circle cx="12" cy="6" r="3.6" fill="currentColor" stroke="none"/><path d="M9.8 9.4c-.2 3.6-1.5 6.4-3.5 9-.6.8-.1 2 .9 2h9.6c1 0 1.5-1.2.9-2-2-2.6-3.3-5.4-3.5-9z" fill="currentColor" stroke="none"/>',
+  // 3D kockica – broj odigranih partija
+  die3d: '<path d="M12 2.5l8.5 4.7v9.6L12 21.5l-8.5-4.7V7.2z"/><path d="M3.5 7.2L12 12l8.5-4.8M12 12v9.5"/><ellipse cx="12" cy="7.2" rx="1.6" ry="0.95" fill="currentColor" stroke="none"/><circle cx="6.1" cy="11.3" r="1.05" fill="currentColor" stroke="none"/><circle cx="9.5" cy="17.6" r="1.05" fill="currentColor" stroke="none"/><circle cx="14.4" cy="17.2" r="1.05" fill="currentColor" stroke="none"/><circle cx="16.3" cy="14.3" r="1.05" fill="currentColor" stroke="none"/><circle cx="18.2" cy="11.4" r="1.05" fill="currentColor" stroke="none"/>',
   external: '<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   heading: '<path d="M6 4v16M18 4v16M6 12h12"/>',

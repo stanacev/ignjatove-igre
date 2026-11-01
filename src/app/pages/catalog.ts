@@ -44,15 +44,18 @@ import { EmptyState } from '../shared/status';
             </div>
           </div>
           <app-filter-fields [state]="f" layout="row" />
-          <button type="button" class="btn btn-g mt-9 flex-none" (click)="f.reset()" [disabled]="!f.activeCount()">
-            <app-icon name="refresh" [size]="18" />Resetuj filtere
-          </button>
         </form>
 
         <div class="mt-7 mb-5 flex flex-wrap items-center justify-between gap-4">
           <div class="flex flex-wrap items-center gap-3.5">
             <h1 class="m-0 font-display text-[26px] font-normal" aria-live="polite">{{ countText() }}</h1>
             <ng-container *ngTemplateOutlet="chips" />
+            <!-- samo kad je neki filter ili pretraga uključena -->
+            @if (f.activeCount() || f.query()) {
+              <button type="button" class="btn btn-g h-8 px-2 text-sm" (click)="resetAll()">
+                <app-icon name="refresh" [size]="16" />Resetuj filtere
+              </button>
+            }
           </div>
           <div class="flex items-center gap-2.5">
             <label for="sort-desktop" class="text-[13px] font-bold text-cream-300">Sortiraj</label>

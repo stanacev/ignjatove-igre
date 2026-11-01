@@ -41,9 +41,11 @@ interface Segment {
           <aside class="panel flex w-[340px] flex-none flex-col gap-6 p-5">
             <h2 class="label-caps m-0">Filteri</h2>
             <app-filter-fields [state]="f" />
-            <button type="button" class="btn btn-g self-start" (click)="f.reset()" [disabled]="!f.activeCount()">
-              <app-icon name="refresh" [size]="18" />Resetuj filtere
-            </button>
+            @if (f.activeCount()) {
+              <button type="button" class="btn btn-g self-start" (click)="f.reset()">
+                <app-icon name="refresh" [size]="18" />Resetuj filtere
+              </button>
+            }
           </aside>
         } @else {
           <button type="button" class="btn btn-s h-12 w-full justify-between px-3" (click)="sheetOpen.set(true)">
